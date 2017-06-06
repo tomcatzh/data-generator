@@ -73,7 +73,7 @@ type templateColumn struct {
 
 // FileData is a handler of file for data generator
 type FileData interface {
-	Data() (io.ReadSeeker, error)
+	Data() (io.Reader, error)
 	Name() (string, error)
 	AddColumn(column columnData)
 	Clone() FileData
@@ -475,7 +475,7 @@ func NewTemplate(templateFile string) (*Template, error) {
 }
 
 type storage interface {
-	Save(key string, reader io.ReadSeeker) (int64, error)
+	Save(key string, reader io.Reader) (int64, error)
 }
 
 func (f *file) AddColumn(column columnData) {

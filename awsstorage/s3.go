@@ -24,7 +24,7 @@ func NewStorageS3(region string, bucket string) *StorageS3 {
 }
 
 // Save function uploads the reader to S3
-func (s *StorageS3) Save(key string, reader io.ReadSeeker) (int64, error) {
+func (s *StorageS3) Save(key string, reader io.Reader) (int64, error) {
 	sess := session.Must(session.NewSession(&aws.Config{
 		Region: aws.String("cn-north-1"),
 	}))

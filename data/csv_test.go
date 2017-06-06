@@ -96,3 +96,42 @@ func TestCsv2(t *testing.T) {
 		t.Errorf("Unexcepted result: %v", s)
 	}
 }
+
+func TestSmallRead(t *testing.T) {
+	namePart := []namePart{}
+	c := newCsv(2, namePart, defaultDelimiter, defaultQuoteChar, "\\", defaultLineTeriminator, false)
+	c.AddColumn(newFixString("test", "a"))
+	c.AddColumn(newFixString("test", "b"))
+	c.AddColumn(newFixString("test", "c"))
+
+	r, err := c.Data()
+	if err != nil {
+		t.Errorf("Unexcepted error: %v", err)
+	}
+
+	buf := make([]byte, 10)
+
+	n, err := r.Read(buf)
+	if err != nil {
+		t.Errorf("Unexcepted error: %v", err)
+	}
+	if n != 10 {
+		t.Errorf("Unexcepted bytes: %v", n)
+	}
+
+	n, err = r.Read(buf)
+	if err != nil {
+		t.Errorf("Unexcepted error: %v", err)
+	}
+	if n != 10 {
+		t.Errorf("Unexcepted bytes: %v", n)
+	}
+
+	n, err = r.Read(buf)
+	if err != nil {
+		t.Errorf("Unexcepted error: %v", err)
+	}
+	if n != 6 {
+		t.Errorf("Unexcepted bytes: %v", n)
+	}
+}

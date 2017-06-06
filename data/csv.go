@@ -12,6 +12,59 @@ const defaultQuoteChar = "\""
 const defaultEscapeChar = ""
 const defaultLineTeriminator = "\r\n"
 
+type csvReader struct {
+	csvContent  *csv
+	rowNow      int
+	buffer      []byte
+	bufferPoint int
+}
+
+func min(x, y int) int {
+	if x < y {
+		return x
+	}
+	return y
+}
+
+func (r *csvReader) Read(b []byte) (copyed int, err error) {
+	max := len(b)
+
+	bufferLength := len(r.buffer)
+	bufferLeft := bufferLength - r.bufferPoint
+	if r.rowNow > r.csvContent.rowCount && bufferLeft <= 0 {
+		return 0, io.EOF
+	}
+
+	for {
+		if copyed >= max {
+			break
+		}
+
+		bufferLength = len(r.buffer)
+		bufferLeft = bufferLength - r.bufferPoint
+		if bufferLeft > 0 {
+			willCopy := min(max-copyed, bufferLeft)
+			n := copy(b[copyed:], r.buffer[r.bufferPoint:r.bufferPoint+willCopy])
+			copyed += n
+			r.bufferPoint += n
+			continue
+		}
+
+		if r.rowNow > r.csvContent.rowCount {
+			break
+		}
+
+		r.buffer, err = r.csvContent.line(r.rowNow)
+		if err != nil {
+			return 0, err
+		}
+		r.bufferPoint = 0
+		r.rowNow++
+	}
+
+	return
+}
+
 type csv struct {
 	file
 	haveTitleLine  bool
@@ -40,8 +93,20 @@ func (c *csv) Clone() FileData {
 	return newCsv(c.rowCount, c.namePart, c.delimiter, c.quoteChar, c.escapeChar, c.lineTerminator, c.haveTitleLine)
 }
 
-func (c *csv) line(columns []string) []byte {
+func (c *csv) line(row int) ([]byte, error) {
 	var buffer bytes.Buffer
+
+	var err error
+	var columns []string
+	if row == 0 {
+		columns = c.row.Title()
+	} else {
+		columns, err = c.row.Data()
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	lineStart := true
 	for _, column := range columns {
 		if lineStart {
@@ -57,29 +122,24 @@ func (c *csv) line(columns []string) []byte {
 		buffer.WriteString(fmt.Sprintf("%v%v%v", c.quoteChar, column, c.quoteChar))
 	}
 
-	return buffer.Bytes()
+	buffer.WriteString(c.lineTerminator)
+
+	return buffer.Bytes(), nil
 }
 
-func (c *csv) Data() (io.ReadSeeker, error) {
-	var buffer bytes.Buffer
+func (c *csv) Data() (io.Reader, error) {
+	var rowNow int
 
 	if c.haveTitleLine {
-		titleData := c.row.Title()
-		buffer.Write(c.line(titleData))
-		buffer.WriteString(c.lineTerminator)
+		rowNow = 0
+	} else {
+		rowNow = 1
 	}
 
-	for i := 0; i < c.rowCount; i++ {
-		rowData, err := c.row.Data()
-		if err != nil {
-			return nil, err
-		}
-		buffer.Write(c.line(rowData))
-
-		buffer.WriteString(c.lineTerminator)
-	}
-
-	return bytes.NewReader(buffer.Bytes()), nil
+	return &csvReader{
+		csvContent: c,
+		rowNow:     rowNow,
+	}, nil
 }
 
 func (c *csv) Save() (int64, error) {

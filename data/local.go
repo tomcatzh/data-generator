@@ -12,7 +12,7 @@ type storageLocal struct {
 	path string
 }
 
-func (l *storageLocal) Save(key string, reader io.ReadSeeker) (int64, error) {
+func (l *storageLocal) Save(key string, reader io.Reader) (int64, error) {
 	var path bytes.Buffer
 	path.WriteString(l.path)
 
