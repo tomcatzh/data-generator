@@ -9,6 +9,8 @@ import (
 	"io/ioutil"
 	"strconv"
 	"time"
+
+	"github.com/tomcatzh/data-generator/awsstorage"
 )
 
 const defaultRowCount = 1000
@@ -452,6 +454,16 @@ func NewTemplate(templateFile string) (*Template, error) {
 				spath = "."
 			}
 			result.storage = newStorageLocal(spath)
+		case "S3":
+			sregion, ok := storage["Region"].(string)
+			if !ok || sregion == "" {
+				return nil, errors.New("Template do not have S3 region")
+			}
+			sbucket, ok := storage["Bucket"].(string)
+			if !ok || sbucket == "" {
+				return nil, errors.New("Template do not have S3 bucket")
+			}
+			result.storage = awsstorage.NewStorageS3(sregion, sbucket)
 		default:
 			return nil, fmt.Errorf("Unexecepted Storage type: %v", stype)
 		}

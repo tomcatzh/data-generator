@@ -63,7 +63,7 @@ func TestNewTemplate(t *testing.T) {
 	if err != nil {
 		t.Errorf("Unexcepted error on reading data: %v", err)
 	}
-	fmt.Println(string(b))
+	fmt.Println(len(b))
 
 	f, err = template.getFile()
 	if err != nil {
@@ -78,7 +78,7 @@ func TestNewTemplate(t *testing.T) {
 	if err != nil {
 		t.Errorf("Unexcepted error on reading data: %v", err)
 	}
-	fmt.Println(string(b))
+	fmt.Println(len(b))
 }
 
 func TestTemplateIterate(t *testing.T) {
@@ -102,6 +102,17 @@ func TestTemplateIterate(t *testing.T) {
 		if err != nil {
 			t.Errorf("Unexcepted error on reading data: %v", err)
 		}
-		fmt.Println(string(b))
+		fmt.Println(len(b))
+	}
+}
+
+func TestSaveS3(t *testing.T) {
+	template, err := NewTemplate("../templates/s3sample.json")
+	if err != nil {
+		t.Errorf("Unexcepted error on template: %v", err)
+	}
+
+	for f := range template.Iterate() {
+		f.Save()
 	}
 }
