@@ -1,4 +1,4 @@
-package awsstorage
+package data
 
 import (
 	"bytes"

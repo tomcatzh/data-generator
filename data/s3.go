@@ -1,4 +1,4 @@
-package awsstorage
+package data
 
 import (
 	"io"
@@ -9,22 +9,21 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
 
-// A StorageS3 is handler of aws S3
-type StorageS3 struct {
+type storageS3 struct {
 	config *aws.Config
 	bucket string
 }
 
-// NewStorageS3 returns StorageS3 handler
-func NewStorageS3(region string, bucket string) *StorageS3 {
-	return &StorageS3{
+// NewStorageS3 returns storageS3 handler
+func newStorageS3(region string, bucket string) *storageS3 {
+	return &storageS3{
 		config: &aws.Config{Region: aws.String(region)},
 		bucket: bucket,
 	}
 }
 
 // Save function uploads the reader to S3
-func (s *StorageS3) Save(key string, reader io.Reader) (int64, error) {
+func (s *storageS3) Save(key string, reader io.Reader) (int64, error) {
 	sess := session.Must(session.NewSession(&aws.Config{
 		Region: aws.String("cn-north-1"),
 	}))
