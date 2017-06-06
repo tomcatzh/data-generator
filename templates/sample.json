@@ -1,0 +1,59 @@
+{
+    "FileCount": 2,
+    "Storage": {
+        "Type": "Local",
+        "Path": "/tmp/"
+    },
+    "Format": {
+        "Type": "csv",
+        "delimiter": null,
+        "quotechar": null,
+        "escapechar": null,
+        "lineterminator": null,
+        "haveTitleLine": false
+    },
+    "File": {
+        "RowCount": 5,
+        "Name": "$2/$0[4]/output-$0.csv",
+        "Data": {
+            "0": {
+                "Title": "DateObject",
+                "Type": "datetime",
+                "Format": "2006-01-02",
+                "Change": "PerFile",
+                "Step": {
+                    "Type": "Fix",
+                    "Duration": "24h"
+                },
+                "Start": "2017-01-01",
+                "End": "2017-01-03"
+            },
+            "1": {
+                "Title": "Time",
+                "Type": "datetime",
+                "Format": "15:04:05",
+                "Change": "PerRow",
+                "Step": {
+                    "Type": "Random",
+                    "Unit": "s",
+                    "Max": 100,
+                    "Min": 1
+                },
+                "Start": "00:00:00"
+            },
+            "2": {
+                "Title": "Location",
+                "Type": "string",
+                "Struct": "enum",
+                "Change": "PerFile",
+                "Value": ["LHR3", "MIA3", "FRA2", "LAX1", "SFO4", "DUB2"]
+            },
+            "3": {
+                "Title": "Host",
+                "Type": "string",
+                "Struct": "fix",
+                "Value": "eabcd12345678.cloudfront.net"
+            }
+        }  
+    }
+}
