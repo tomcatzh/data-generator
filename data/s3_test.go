@@ -21,7 +21,7 @@ func TestS3Save(t *testing.T) {
 	bucket := "live"
 	key := "awsstorage_test"
 
-	s := NewStorageS3(region, bucket)
+	s := newStorageS3(region, bucket)
 
 	l, err := s.Save(key, bytes.NewReader(buf.Bytes()))
 	if err != nil {
