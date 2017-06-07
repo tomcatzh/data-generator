@@ -270,19 +270,19 @@ func NewTemplate(templateFile string) (*Template, error) {
 		haveTitleLine, ok := format["haveTitleLine"].(bool)
 
 		delimiter, ok := format["delimiter"].(string)
-		if !ok || delimiter == "" {
+		if !ok {
 			delimiter = defaultDelimiter
 		}
 		quotechar, ok := format["quotechar"].(string)
-		if !ok || quotechar == "" {
+		if !ok {
 			quotechar = defaultQuoteChar
 		}
 		escapechar, ok := format["escapechar"].(string)
-		if !ok || escapechar == "" {
+		if !ok {
 			escapechar = defaultEscapeChar
 		}
 		lineterminator, ok := format["lineterminator"].(string)
-		if !ok || lineterminator == "" {
+		if !ok {
 			lineterminator = defaultLineTeriminator
 		}
 		csv := newCsv(int(rowCount), part, delimiter, quotechar, escapechar, lineterminator, haveTitleLine)

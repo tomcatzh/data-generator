@@ -6,8 +6,8 @@
     },
     "Format": {
         "Type": "csv",
-        "delimiter": "",
-        "quotechar": "\t",
+        "delimiter": "\t",
+        "quotechar": "",
         "escapechar": null,
         "lineterminator": null,
         "haveTitleLine": false
