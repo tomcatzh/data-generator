@@ -11,24 +11,37 @@ var maxTime = time.Unix(1<<63-62135596801, 999999999)
 
 type datetimeStep interface {
 	Next(now time.Time) time.Time
+	Clone() datetimeStep
 }
 
-type datetimeFixStep struct {
+type datetimeIncreaseStep struct {
 	duration time.Duration
 }
 
-func (s *datetimeFixStep) Next(now time.Time) time.Time {
+func (s *datetimeIncreaseStep) Clone() datetimeStep {
+	return s
+}
+
+func (s *datetimeIncreaseStep) Next(now time.Time) time.Time {
 	return now.Add(s.duration)
 }
 
 type datetimeRandomStep struct {
 	durationN time.Duration
 	durationA time.Duration
+	rand      *rand.Rand
+}
+
+func (s *datetimeRandomStep) Clone() datetimeStep {
+	return &datetimeRandomStep{
+		durationN: s.durationN,
+		durationA: s.durationA,
+		rand:      rand.New(rand.NewSource(time.Now().UnixNano())),
+	}
 }
 
 func (s *datetimeRandomStep) Next(now time.Time) time.Time {
-	durationNano := rand.Int63n(s.durationN.Nanoseconds()) + s.durationA.Nanoseconds()
-
+	durationNano := s.rand.Int63n(s.durationN.Nanoseconds()) + s.durationA.Nanoseconds()
 	return now.Add(time.Duration(durationNano))
 }
 
@@ -53,21 +66,23 @@ func (d *datetime) Data() (string, error) {
 }
 
 func (d *datetime) Clone() columnData {
-	return &datetime{
+	result := &datetime{
 		column: d.column,
 		format: d.format,
 		now:    d.now,
 		end:    d.end,
-		step:   d.step,
+		step:   d.step.Clone(),
 	}
+
+	return result
 }
 
-func newDatetimeFix(title string, format string, duration string, start time.Time, end time.Time) (*datetime, error) {
+func newDatetimeIncrease(title string, format string, duration string, start time.Time, end time.Time) (*datetime, error) {
 	durationNano, err := time.ParseDuration(duration)
 	if err != nil {
 		return nil, err
 	}
-	step := datetimeFixStep{duration: durationNano}
+	step := datetimeIncreaseStep{duration: durationNano}
 
 	return &datetime{
 		column: column{

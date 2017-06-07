@@ -15,7 +15,7 @@
         "haveTitleLine": false
     },
     "File": {
-        "RowCount": 5,
+        "RowCount": 50,
         "Name": "$2/$0[4]/output-$0.csv",
         "Data": {
             "0": {
@@ -24,11 +24,10 @@
                 "Format": "2006-01-02",
                 "Change": "PerFile",
                 "Step": {
-                    "Type": "Fix",
+                    "Type": "Increase",
                     "Duration": "24h"
                 },
-                "Start": "2017-01-01",
-                "End": "2017-01-03"
+                "Start": "2017-01-01"
             },
             "1": {
                 "Title": "Time",
@@ -46,14 +45,14 @@
             "2": {
                 "Title": "Location",
                 "Type": "string",
-                "Struct": "enum",
+                "Struct": "Enum",
                 "Change": "PerFile",
                 "Value": ["LHR3", "MIA3", "FRA2", "LAX1", "SFO4", "DUB2"]
             },
             "3": {
                 "Title": "Host",
                 "Type": "string",
-                "Struct": "fix",
+                "Struct": "Fix",
                 "Value": "eabcd12345678.cloudfront.net"
             }
         }  

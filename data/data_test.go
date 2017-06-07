@@ -13,7 +13,7 @@ func TestRow(t *testing.T) {
 	title := []string{"Date", "User", "Member"}
 
 	stamp, _ := time.Parse(time.UnixDate, "Thu Jun 1 17:00:00 CST 2017")
-	c1, _ := newDatetimeFix(title[0], time.UnixDate, "1s", stamp, maxTime)
+	c1, _ := newDatetimeIncrease(title[0], time.UnixDate, "1s", stamp, maxTime)
 	r.AddColumn(c1)
 
 	users := []string{"Alice", "Bob", "Charles"}
@@ -48,6 +48,7 @@ func TestNewTemplate(t *testing.T) {
 	template, err := NewTemplate("../templates/sample.json")
 	if err != nil {
 		t.Errorf("Unexcepted error on template: %v", err)
+		return
 	}
 
 	f, err := template.getFile()
@@ -110,6 +111,7 @@ func TestSaveS3(t *testing.T) {
 	template, err := NewTemplate("../templates/s3sample.json")
 	if err != nil {
 		t.Errorf("Unexcepted error on template: %v", err)
+		return
 	}
 
 	for f := range template.Iterate() {

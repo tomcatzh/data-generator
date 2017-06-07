@@ -1,6 +1,9 @@
 package data
 
-import "math/rand"
+import (
+	"math/rand"
+	"time"
+)
 
 type fixString struct {
 	column
@@ -27,6 +30,7 @@ func newFixString(title string, value string) *fixString {
 type enumString struct {
 	column
 	values []string
+	rand   *rand.Rand
 }
 
 func (s *enumString) Data() (string, error) {
@@ -34,7 +38,10 @@ func (s *enumString) Data() (string, error) {
 }
 
 func (s *enumString) Clone() columnData {
-	return newEnumString(s.title, s.values)
+	result := newEnumString(s.title, s.values)
+	result.rand = rand.New(rand.NewSource(time.Now().UTC().UnixNano()))
+
+	return result
 }
 
 func newEnumString(title string, values []string) *enumString {
