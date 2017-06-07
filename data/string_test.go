@@ -1,6 +1,10 @@
 package data
 
-import "testing"
+import (
+	"math/rand"
+	"testing"
+	"time"
+)
 
 func stringContins(s []string, e string) bool {
 	for _, v := range s {
@@ -32,6 +36,7 @@ func TestEnumString(t *testing.T) {
 	values := []string{"test1", "test2", "test3"}
 
 	d := newEnumString("test", values)
+	d.rand = rand.New(rand.NewSource(time.Now().UTC().UnixNano()))
 
 	if d.Title() != "test" {
 		t.Errorf("Title error: %v", d.Title())

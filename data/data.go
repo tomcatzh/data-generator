@@ -369,13 +369,13 @@ func NewTemplate(templateFile string) (*Template, error) {
 			}
 
 			switch dstepType {
-			case "Fix":
+			case "Increase":
 				dstepDuration, ok := dstep["Duration"].(string)
 				if !ok || dstepDuration == "" {
 					return nil, fmt.Errorf("%v column does not have datetime fix duration", i)
 				}
 
-				cdata.column, err = newDatetimeFix(ctitle, dformat, dstepDuration, dstart, dend)
+				cdata.column, err = newDatetimeIncrease(ctitle, dformat, dstepDuration, dstart, dend)
 				if err != nil {
 					return nil, err
 				}
@@ -409,14 +409,14 @@ func NewTemplate(templateFile string) (*Template, error) {
 			}
 
 			switch sstruct {
-			case "fix":
+			case "Fix":
 				sfixValue, ok := c["Value"].(string)
 				if !ok {
 					return nil, fmt.Errorf("%v column does not have string fix value", i)
 				}
 
 				cdata.column = newFixString(ctitle, sfixValue)
-			case "enum":
+			case "Enum":
 				sEnumValue, ok := c["Value"].([]interface{})
 				if !ok {
 					return nil, fmt.Errorf("%v column does not have string enum value", i)

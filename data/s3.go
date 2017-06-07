@@ -2,7 +2,6 @@ package data
 
 import (
 	"io"
-	"runtime"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -36,7 +35,6 @@ func (s *storageS3) Save(key string, reader io.Reader) (int64, error) {
 			u.PartSize = s.partSize
 		}
 		u.MaxUploadParts = int((5 * 1024 * 1024 * 1024 * 1024) / u.PartSize)
-		u.Concurrency = runtime.GOMAXPROCS(0)
 	})
 	_, err := uploader.Upload(&s3manager.UploadInput{
 		Bucket: &s.bucket,

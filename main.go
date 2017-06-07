@@ -29,7 +29,7 @@ func main() {
 
 	var wg sync.WaitGroup
 
-	ticket, err := ticket.NewGoTicket(runtime.GOMAXPROCS(0) * 2)
+	ticket, err := ticket.NewGoTicket(runtime.GOMAXPROCS(0) * 3)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when read template: %v", err)
 		os.Exit(2)
