@@ -461,7 +461,11 @@ func NewTemplate(templateFile string) (*Template, error) {
 			if !ok || sbucket == "" {
 				return nil, errors.New("Template do not have S3 bucket")
 			}
-			result.storage = newStorageS3(sregion, sbucket)
+			spartSizeM, ok := storage["PartSizeM"].(float64)
+			if !ok {
+				spartSizeM = 0
+			}
+			result.storage = newStorageS3(sregion, sbucket, int64(spartSizeM)*1024*1024)
 		default:
 			return nil, fmt.Errorf("Unexecepted Storage type: %v", stype)
 		}

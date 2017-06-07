@@ -3,7 +3,8 @@
     "Storage": {
         "Type": "S3",
         "Region": "cn-north-1",
-        "Bucket": "live"
+        "Bucket": "live",
+        "PartSizeM": 64
     },  
     "Format": {
         "Type": "csv",

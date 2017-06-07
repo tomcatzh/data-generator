@@ -2,6 +2,7 @@ package data
 
 import (
 	"io"
+	"runtime"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -10,15 +11,17 @@ import (
 )
 
 type storageS3 struct {
-	config *aws.Config
-	bucket string
+	config   *aws.Config
+	bucket   string
+	partSize int64
 }
 
 // NewStorageS3 returns storageS3 handler
-func newStorageS3(region string, bucket string) *storageS3 {
+func newStorageS3(region string, bucket string, partSize int64) *storageS3 {
 	return &storageS3{
-		config: &aws.Config{Region: aws.String(region)},
-		bucket: bucket,
+		config:   &aws.Config{Region: aws.String(region)},
+		bucket:   bucket,
+		partSize: partSize,
 	}
 }
 
@@ -28,7 +31,13 @@ func (s *storageS3) Save(key string, reader io.Reader) (int64, error) {
 		Region: aws.String("cn-north-1"),
 	}))
 
-	uploader := s3manager.NewUploader(sess)
+	uploader := s3manager.NewUploader(sess, func(u *s3manager.Uploader) {
+		if s.partSize > 5*1024*1024 {
+			u.PartSize = s.partSize
+		}
+		u.MaxUploadParts = int((5 * 1024 * 1024 * 1024 * 1024) / u.PartSize)
+		u.Concurrency = runtime.GOMAXPROCS(0)
+	})
 	_, err := uploader.Upload(&s3manager.UploadInput{
 		Bucket: &s.bucket,
 		Key:    &key,
