@@ -15,7 +15,7 @@ func (s *fixString) Data() (string, error) {
 }
 
 func (s *fixString) Clone() columnData {
-	return newFixString(s.title, s.value)
+	return s
 }
 
 func newFixString(title string, value string) *fixString {
@@ -38,10 +38,11 @@ func (s *enumString) Data() (string, error) {
 }
 
 func (s *enumString) Clone() columnData {
-	result := newEnumString(s.title, s.values)
-	result.rand = rand.New(rand.NewSource(time.Now().UTC().UnixNano()))
-
-	return result
+	return &enumString{
+		column: s.column,
+		values: s.values,
+		rand:   rand.New(rand.NewSource(time.Now().UnixNano())),
+	}
 }
 
 func newEnumString(title string, values []string) *enumString {

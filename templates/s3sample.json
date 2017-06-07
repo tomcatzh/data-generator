@@ -20,7 +20,7 @@
         "Data": {
             "0": {
                 "Title": "DateObject",
-                "Type": "datetime",
+                "Type": "Datetime",
                 "Format": "2006-01-02",
                 "Change": "PerFile",
                 "Step": {
@@ -31,7 +31,7 @@
             },
             "1": {
                 "Title": "Time",
-                "Type": "datetime",
+                "Type": "Datetime",
                 "Format": "15:04:05",
                 "Change": "PerRow",
                 "Step": {
@@ -44,14 +44,14 @@
             },
             "2": {
                 "Title": "Location",
-                "Type": "string",
+                "Type": "String",
                 "Struct": "Enum",
                 "Change": "PerFile",
                 "Value": ["LHR3", "MIA3", "FRA2", "LAX1", "SFO4", "DUB2"]
             },
             "3": {
                 "Title": "Host",
-                "Type": "string",
+                "Type": "String",
                 "Struct": "Fix",
                 "Value": "eabcd12345678.cloudfront.net"
             }

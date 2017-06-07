@@ -6,30 +6,30 @@
     },
     "Format": {
         "Type": "csv",
-        "delimiter": null,
-        "quotechar": null,
+        "delimiter": "",
+        "quotechar": "\t",
         "escapechar": null,
         "lineterminator": null,
         "haveTitleLine": false
     },
     "File": {
         "RowCount": 5,
-        "Name": "$2/$0[4]/output-$0.csv",
+        "Name": "$0[4]/$1[2]/output-$0.csv",
         "Data": {
             "0": {
                 "Title": "DateObject",
-                "Type": "datetime",
+                "Type": "Datetime",
                 "Format": "2006-01-02",
                 "Change": "PerFile",
                 "Step": {
                     "Type": "Increase",
                     "Duration": "24h"
                 },
-                "Start": "2017-01-01"
+                "Start": "2015-01-01"
             },
             "1": {
                 "Title": "Time",
-                "Type": "datetime",
+                "Type": "Datetime",
                 "Format": "15:04:05",
                 "Change": "PerRow",
                 "Step": {
@@ -42,9 +42,8 @@
             },
             "2": {
                 "Title": "Location",
-                "Type": "string",
+                "Type": "String",
                 "Struct": "Enum",
-                "Change": "PerFile",
                 "Value": ["LHR3", "MIA3", "FRA2", "LAX1", "SFO4", "DUB2"]
             },
             "3": {
@@ -53,15 +52,58 @@
                 "Format": "Integer",
                 "Step": {
                     "Type": "Random",
-                    "Max": "10240",
-                    "Min": "1"
+                    "Max": 10240,
+                    "Min": 1
                 } 
+            },
+            "4": {
+                "Title": "RequestIP",
+                "Type": "IPv4",
+                "CIDR": "10.0.0.0/8"
+            },
+            "5": {
+                "Title": "Method",
+                "Type": "String",
+                "Struct": "Enum",
+                "Value": ["GET", "POST"]
             },
             "6": {
                 "Title": "Host",
-                "Type": "string",
+                "Type": "String",
                 "Struct": "Fix",
                 "Value": "eabcd12345678.cloudfront.net"
+            },
+            "7": {
+                "Title": "Uri",
+                "Type": "String",
+                "Struct": "Enum",
+                "Value": ["/test-image-1.jpeg", "/test-image-2.jpeg", "/test-image-3.jpeg"]
+            },
+            "8": {
+                "Title": "Status",
+                "Type": "String",
+                "Struct": "Enum",
+                "Value": ["200", "304", "404", "500", "401"]
+            },
+            "9": {
+                "Title": "Referrer",
+                "Type": "String",
+                "Struct": "Fix",
+                "Value": "-"
+            },
+            "10": {
+                "Title": "Agent",
+                "Type": "String",
+                "Struct": "Enum",
+                "Value": [
+                    "Mozilla/5.0%20(iOS;%20U;%20Windows%20NT%205.1;%20en-US;%20rv:1.9.0.9)%20Gecko/2009040821%20Lynx/3.0.9",
+                    "Mozilla/5.0%20(MacOS;%20U;%20Windows%20NT%205.1;%20en-US;%20rv:1.9.0.9)%20Gecko/2009040821%20IE/3.0.9",
+                    "Mozilla/5.0%20(Linux;%20U;%20Windows%20NT%205.1;%20en-US;%20rv:1.9.0.9)%20Gecko/2009040821%20Chrome/3.0.9",
+                    "Mozilla/5.0%20(Android;%20U;%20Windows%20NT%205.1;%20en-US;%20rv:1.9.0.9)%20Gecko/2009040821%20Safari/3.0.9",
+                    "Mozilla/5.0%20(Windows;%20U;%20Windows%20NT%205.1;%20en-US;%20rv:1.9.0.9)%20Gecko/2009040821%20Firefox/3.0.9",
+                    "Mozilla/5.0%20(OSX;%20U;%20Windows%20NT%205.1;%20en-US;%20rv:1.9.0.9)%20Gecko/2009040821%20Chrome/3.0.9",
+                    "Mozilla/5.0%20(Windows;%20U;%20Windows%20NT%205.1;%20en-US;%20rv:1.9.0.9)%20Gecko/2009040821%20Opera/3.0.9"
+                ]
             }
         }  
     }

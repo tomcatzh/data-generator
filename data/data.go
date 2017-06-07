@@ -331,7 +331,7 @@ func NewTemplate(templateFile string) (*Template, error) {
 		}
 
 		switch ctype {
-		case "datetime":
+		case "Datetime":
 			dformat, ok := c["Format"].(string)
 			if !ok || dformat == "" {
 				dformat = time.RFC3339
@@ -402,7 +402,7 @@ func NewTemplate(templateFile string) (*Template, error) {
 			default:
 				return nil, fmt.Errorf("Unexecpted datetime step type in column %v: %v", i, dstepType)
 			}
-		case "string":
+		case "String":
 			sstruct, ok := c["Struct"].(string)
 			if !ok || sstruct == "" {
 				return nil, fmt.Errorf("%v column does not have string struct", i)
@@ -430,6 +430,40 @@ func NewTemplate(templateFile string) (*Template, error) {
 				cdata.column = newEnumString(ctitle, sEnumString)
 			default:
 				return nil, fmt.Errorf("Unexecpted string struct in column %v: %v", i, sstruct)
+			}
+		case "Numeric":
+			nformat, ok := c["Format"].(string)
+			if !ok || nformat == "" {
+				return nil, fmt.Errorf("%v column does not have numeric format", i)
+			}
+
+			nstep, ok := c["Step"].(map[string]interface{})
+			if !ok {
+				return nil, fmt.Errorf("%v column does not have numeric step section", i)
+			}
+
+			switch nformat {
+			case "Integer":
+				niMax, ok := nstep["Max"].(float64)
+				if !ok {
+					return nil, fmt.Errorf("%v column does not have datetime random max", i)
+				}
+				niMin, ok := nstep["Min"].(float64)
+				if !ok {
+					return nil, fmt.Errorf("%v column does not have datetime random min", i)
+				}
+				cdata.column = newRandomInteger(ctitle, int(niMax), int(niMin))
+			default:
+				return nil, fmt.Errorf("Unexecpted numeric format in column %v: %v", i, nformat)
+			}
+		case "IPv4":
+			icidr, ok := c["CIDR"].(string)
+			if !ok || icidr == "" {
+				return nil, fmt.Errorf("%v column does not have IPv4 CIDR", i)
+			}
+			cdata.column, err = newRandomIPv4(ctitle, icidr)
+			if err != nil {
+				return nil, fmt.Errorf("Unexecpted CIDR format in column %v: %v", i, icidr)
 			}
 		default:
 			return nil, fmt.Errorf("Unexecpted column type in column %v: %v", i, ctype)
