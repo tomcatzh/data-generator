@@ -51,6 +51,7 @@ type datetime struct {
 	now    time.Time
 	end    time.Time
 	step   datetimeStep
+	buffer []byte
 }
 
 func (d *datetime) Data() (string, error) {
@@ -62,16 +63,27 @@ func (d *datetime) Data() (string, error) {
 
 	d.now = stamp
 
-	return stamp.Format(d.format), nil
+	return string(stamp.AppendFormat(d.buffer, d.format)), nil
 }
 
 func (d *datetime) Clone() columnData {
+	const bufSize = 64
+	var b []byte
+	max := len(d.format) + 10
+	if max < bufSize {
+		var buf [bufSize]byte
+		b = buf[:0]
+	} else {
+		b = make([]byte, 0, max)
+	}
+
 	result := &datetime{
 		column: d.column,
 		format: d.format,
 		now:    d.now,
 		end:    d.end,
 		step:   d.step.Clone(),
+		buffer: b,
 	}
 
 	return result
