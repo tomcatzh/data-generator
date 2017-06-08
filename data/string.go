@@ -34,7 +34,7 @@ type enumString struct {
 }
 
 func (s *enumString) Data() (string, error) {
-	return s.values[rand.Intn(len(s.values))], nil
+	return s.values[s.rand.Intn(len(s.values))], nil
 }
 
 func (s *enumString) Clone() columnData {

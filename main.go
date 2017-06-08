@@ -2,19 +2,15 @@ package main
 
 import (
 	"fmt"
-	"math/rand"
 	"os"
 	"runtime"
 	"sync"
-	"time"
 
 	"github.com/tomcatzh/data-generator/data"
 	"github.com/tomcatzh/data-generator/ticket"
 )
 
 func main() {
-	rand.Seed(time.Now().UTC().UnixNano())
-
 	args := os.Args[1:]
 	templateFile := "./template.json"
 	if len(args) > 0 {
