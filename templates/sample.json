@@ -2,7 +2,8 @@
     "FileCount": 2,
     "Storage": {
         "Type": "Local",
-        "Path": "/tmp/test/"
+        "Path": "/tmp/test/",
+        "BufferSizeM": 1024
     },
     "Format": {
         "Type": "csv",

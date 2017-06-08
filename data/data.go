@@ -485,7 +485,14 @@ func NewTemplate(templateFile string) (*Template, error) {
 			if !ok || spath == "" {
 				spath = "."
 			}
-			result.storage = newStorageLocal(spath)
+			sbufferSize, ok := storage["BufferSizeM"].(float64)
+			var bufsize int
+			if !ok || sbufferSize <= 0 {
+				bufsize = defaultBufferSize
+			} else {
+				bufsize = int(sbufferSize)
+			}
+			result.storage = newStorageLocal(spath, bufsize)
 		case "S3":
 			sregion, ok := storage["Region"].(string)
 			if !ok || sregion == "" {

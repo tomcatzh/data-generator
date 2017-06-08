@@ -52,7 +52,7 @@ func TestCsv(t *testing.T) {
 		t.Errorf("Unexcepted name: %v", s)
 	}
 
-	c.SetStorage(newStorageLocal(tmpPath))
+	c.SetStorage(newStorageLocal(tmpPath, 1024*1024*8))
 
 	len, err := c.Save()
 	if err != nil {

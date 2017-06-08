@@ -8,8 +8,11 @@ import (
 	"strings"
 )
 
+const defaultBufferSize = 128 * 1024 * 1024
+
 type storageLocal struct {
-	path string
+	path       string
+	bufferSize int
 }
 
 func (l *storageLocal) Save(key string, reader io.Reader) (int64, error) {
@@ -39,16 +42,20 @@ func (l *storageLocal) Save(key string, reader io.Reader) (int64, error) {
 	}
 	w := bufio.NewWriter(f)
 	defer w.Flush()
-	len, err := io.Copy(w, reader)
+
+	buffer := make([]byte, 1024*1024*64)
+
+	len, err := io.CopyBuffer(w, reader, buffer)
 	return len, err
 }
 
-func newStorageLocal(path string) *storageLocal {
+func newStorageLocal(path string, bufferSize int) *storageLocal {
 	if path[len(path)-1] == os.PathSeparator {
 		path = path[0 : len(path)-1]
 	}
 
 	return &storageLocal{
-		path: path,
+		path:       path,
+		bufferSize: bufferSize,
 	}
 }
