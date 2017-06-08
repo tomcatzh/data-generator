@@ -72,6 +72,7 @@ type csv struct {
 	quoteChar      string
 	escapeChar     string
 	lineTerminator string
+	buffer         *bytes.Buffer
 }
 
 func newCsv(rowCount int, namePart []namePart, delimiter string, quoteChar string, escapeChar string, lineTerminator string, haveTitleLine bool) *csv {
@@ -90,11 +91,22 @@ func newCsv(rowCount int, namePart []namePart, delimiter string, quoteChar strin
 }
 
 func (c *csv) Clone() FileData {
-	return newCsv(c.rowCount, c.namePart, c.delimiter, c.quoteChar, c.escapeChar, c.lineTerminator, c.haveTitleLine)
+	b := make([]byte, 16*1024)
+	buf := bytes.NewBuffer(b)
+
+	return &csv{
+		file:           c.file,
+		haveTitleLine:  c.haveTitleLine,
+		delimiter:      c.delimiter,
+		quoteChar:      c.quoteChar,
+		escapeChar:     c.escapeChar,
+		lineTerminator: c.lineTerminator,
+		buffer:         buf,
+	}
 }
 
 func (c *csv) line(row int) ([]byte, error) {
-	var buffer bytes.Buffer
+	c.buffer.Reset()
 
 	var err error
 	var columns []string
@@ -112,19 +124,19 @@ func (c *csv) line(row int) ([]byte, error) {
 		if lineStart {
 			lineStart = false
 		} else {
-			buffer.WriteString(c.delimiter)
+			c.buffer.WriteString(c.delimiter)
 		}
 
 		if c.escapeChar != "" {
 			column = strings.Replace(column, c.quoteChar, c.escapeChar, -1)
 		}
 
-		buffer.WriteString(fmt.Sprintf("%v%v%v", c.quoteChar, column, c.quoteChar))
+		c.buffer.WriteString(fmt.Sprintf("%v%v%v", c.quoteChar, column, c.quoteChar))
 	}
 
-	buffer.WriteString(c.lineTerminator)
+	c.buffer.WriteString(c.lineTerminator)
 
-	return buffer.Bytes(), nil
+	return c.buffer.Bytes(), nil
 }
 
 func (c *csv) Data() (io.Reader, error) {
