@@ -1,7 +1,6 @@
 package data
 
 import (
-	"bufio"
 	"bytes"
 	"io"
 	"os"
@@ -40,12 +39,10 @@ func (l *storageLocal) Save(key string, reader io.Reader) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	w := bufio.NewWriter(f)
-	defer w.Flush()
 
-	buffer := make([]byte, 1024*1024*64)
+	buffer := make([]byte, 1024*1024*l.bufferSize)
 
-	len, err := io.CopyBuffer(w, reader, buffer)
+	len, err := io.CopyBuffer(f, reader, buffer)
 	return len, err
 }
 
