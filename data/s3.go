@@ -30,7 +30,9 @@ func (s *storageS3) Save(key string, reader io.Reader) (int64, error) {
 		Region: aws.String("cn-north-1"),
 	}))
 
-	uploader := s3manager.NewUploader(sess, func(u *s3manager.Uploader) {
+	svc := s3.New(sess)
+
+	uploader := s3manager.NewUploaderWithClient(svc, func(u *s3manager.Uploader) {
 		if s.partSize > 5*1024*1024 {
 			u.PartSize = s.partSize
 		}
@@ -44,8 +46,6 @@ func (s *storageS3) Save(key string, reader io.Reader) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-
-	svc := s3.New(sess)
 
 	resp, err := svc.HeadObject(&s3.HeadObjectInput{
 		Bucket: &s.bucket,
