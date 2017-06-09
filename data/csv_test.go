@@ -1,6 +1,7 @@
 package data
 
 import (
+	"io"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -22,7 +23,8 @@ func TestCsv(t *testing.T) {
 			value:    "abc",
 		},
 	}
-	c := newCsv(2, namePart, defaultDelimiter, defaultQuoteChar, defaultEscapeChar, defaultLineTeriminator, true)
+	cA := newCsv(2, namePart, defaultDelimiter, defaultQuoteChar, defaultEscapeChar, defaultLineTeriminator, true)
+	c := cA.Clone()
 	c.AddColumn(newFixString("test", "a"))
 	c.AddColumn(newFixString("test", "b"))
 	c.AddColumn(newFixString("test", "cccc"))
@@ -52,7 +54,7 @@ func TestCsv(t *testing.T) {
 		t.Errorf("Unexcepted name: %v", s)
 	}
 
-	c.SetStorage(newStorageLocal(tmpPath, 1024*1024*8))
+	c.SetStorage(newStorageLocal(tmpPath, 8))
 
 	len, err := c.Save()
 	if err != nil {
@@ -78,7 +80,8 @@ func TestCsv(t *testing.T) {
 
 func TestCsv2(t *testing.T) {
 	namePart := []namePart{}
-	c := newCsv(2, namePart, defaultDelimiter, defaultQuoteChar, "\\", defaultLineTeriminator, false)
+	cA := newCsv(2, namePart, defaultDelimiter, defaultQuoteChar, "\\", defaultLineTeriminator, false)
+	c := cA.Clone()
 	c.AddColumn(newFixString("test", "a\""))
 	c.AddColumn(newFixString("test", "b"))
 	c.AddColumn(newFixString("test", "c"))
@@ -97,9 +100,30 @@ func TestCsv2(t *testing.T) {
 	}
 }
 
+func TestCsvStep(t *testing.T) {
+	namePart := []namePart{}
+	cA := newCsv(20, namePart, defaultDelimiter, defaultQuoteChar, "\\", defaultLineTeriminator, true)
+	c := cA.Clone()
+	c.AddColumn(newFixString("test", "a\""))
+	c.AddColumn(newFixString("test", "b"))
+	c.AddColumn(newFixString("test", "c"))
+
+	r, err := c.Data()
+	if err != nil {
+		t.Errorf("Unexcepted error: %v", err)
+	}
+
+	b := make([]byte, 100)
+
+	for err != io.EOF {
+		_, err = r.Read(b)
+	}
+}
+
 func TestSmallRead(t *testing.T) {
 	namePart := []namePart{}
-	c := newCsv(2, namePart, defaultDelimiter, defaultQuoteChar, "\\", defaultLineTeriminator, false)
+	cA := newCsv(2, namePart, defaultDelimiter, defaultQuoteChar, "\\", defaultLineTeriminator, false)
+	c := cA.Clone()
 	c.AddColumn(newFixString("test", "a"))
 	c.AddColumn(newFixString("test", "b"))
 	c.AddColumn(newFixString("test", "c"))

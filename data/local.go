@@ -10,8 +10,8 @@ import (
 const defaultBufferSize = 128 * 1024 * 1024
 
 type storageLocal struct {
-	path       string
-	bufferSize int
+	path        string
+	bufferSizeM int
 }
 
 func (l *storageLocal) Save(key string, reader io.Reader) (int64, error) {
@@ -40,19 +40,19 @@ func (l *storageLocal) Save(key string, reader io.Reader) (int64, error) {
 		return 0, err
 	}
 
-	buffer := make([]byte, 1024*1024*l.bufferSize)
+	buffer := make([]byte, 1024*1024*l.bufferSizeM)
 
 	len, err := io.CopyBuffer(f, reader, buffer)
 	return len, err
 }
 
-func newStorageLocal(path string, bufferSize int) *storageLocal {
+func newStorageLocal(path string, bufferSizeM int) *storageLocal {
 	if path[len(path)-1] == os.PathSeparator {
 		path = path[0 : len(path)-1]
 	}
 
 	return &storageLocal{
-		path:       path,
-		bufferSize: bufferSize,
+		path:        path,
+		bufferSizeM: bufferSizeM,
 	}
 }

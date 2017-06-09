@@ -2,7 +2,6 @@ package data
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"strings"
 )
@@ -17,6 +16,7 @@ type csvReader struct {
 	rowNow      int
 	buffer      []byte
 	bufferPoint int
+	step        int
 }
 
 func min(x, y int) int {
@@ -28,6 +28,9 @@ func min(x, y int) int {
 
 func (r *csvReader) Read(b []byte) (copyed int, err error) {
 	max := len(b)
+	if r.step == 0 {
+		r.step = 1
+	}
 
 	bufferLength := len(r.buffer)
 	bufferLeft := bufferLength - r.bufferPoint
@@ -35,6 +38,7 @@ func (r *csvReader) Read(b []byte) (copyed int, err error) {
 		return 0, io.EOF
 	}
 
+	readTimes := 1
 	for {
 		if copyed >= max {
 			break
@@ -54,12 +58,18 @@ func (r *csvReader) Read(b []byte) (copyed int, err error) {
 			break
 		}
 
-		r.buffer, err = r.csvContent.line(r.rowNow)
+		step := r.step * readTimes
+		r.buffer, err = r.csvContent.line(r.rowNow, min(r.rowNow+step, r.csvContent.rowCount+1))
 		if err != nil {
 			return 0, err
 		}
+		readTimes += step
 		r.bufferPoint = 0
-		r.rowNow++
+		r.rowNow += step
+	}
+
+	if readTimes > r.step+1 {
+		r.step = r.step*readTimes + 1
 	}
 
 	return
@@ -91,7 +101,7 @@ func newCsv(rowCount int, namePart []namePart, delimiter string, quoteChar strin
 }
 
 func (c *csv) Clone() FileData {
-	b := make([]byte, 16*1024)
+	b := make([]byte, 1024*1024)
 	buf := bytes.NewBuffer(b)
 
 	return &csv{
@@ -105,37 +115,42 @@ func (c *csv) Clone() FileData {
 	}
 }
 
-func (c *csv) line(row int) ([]byte, error) {
+func (c *csv) line(rowStart int, rowMax int) ([]byte, error) {
 	c.buffer.Reset()
 
 	var err error
 	var columns []string
-	if row == 0 {
-		columns = c.row.Title()
-	} else {
-		columns, err = c.row.Data()
-		if err != nil {
-			return nil, err
-		}
-	}
 
-	lineStart := true
-	for _, column := range columns {
-		if lineStart {
-			lineStart = false
+	for i := rowStart; i < rowMax; i++ {
+		if i == 0 {
+			columns = c.row.Title()
+			i++
 		} else {
-			c.buffer.WriteString(c.delimiter)
+			columns, err = c.row.Data()
+			if err != nil {
+				return nil, err
+			}
 		}
 
-		if c.escapeChar != "" {
-			column = strings.Replace(column, c.quoteChar, c.escapeChar, -1)
+		lineStart := true
+		for _, column := range columns {
+			if lineStart {
+				lineStart = false
+			} else {
+				c.buffer.WriteString(c.delimiter)
+			}
+
+			if c.escapeChar != "" {
+				column = strings.Replace(column, c.quoteChar, c.escapeChar, -1)
+			}
+
+			c.buffer.WriteString(c.quoteChar)
+			c.buffer.WriteString(column)
+			c.buffer.WriteString(c.quoteChar)
 		}
 
-		c.buffer.WriteString(fmt.Sprintf("%v%v%v", c.quoteChar, column, c.quoteChar))
+		c.buffer.WriteString(c.lineTerminator)
 	}
-
-	c.buffer.WriteString(c.lineTerminator)
-
 	return c.buffer.Bytes(), nil
 }
 

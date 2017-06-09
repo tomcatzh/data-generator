@@ -13,7 +13,7 @@ func TestLocal(t *testing.T) {
 	const content = "abcdefghijklmnopqrstuvwxyz\n"
 	r := bytes.NewReader([]byte(content))
 
-	l := newStorageLocal(path, 1024*1024*1024)
+	l := newStorageLocal(path, 1)
 
 	name := "test1"
 	length, err := l.Save(name, r)

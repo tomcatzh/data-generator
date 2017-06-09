@@ -26,15 +26,14 @@ func newStorageS3(region string, bucket string, partSize int64) *storageS3 {
 
 // Save function uploads the reader to S3
 func (s *storageS3) Save(key string, reader io.Reader) (int64, error) {
-	sess := session.Must(session.NewSession(&aws.Config{
-		Region: aws.String("cn-north-1"),
-	}))
+	sess := session.Must(session.NewSession(s.config))
 
 	svc := s3.New(sess)
 
 	uploader := s3manager.NewUploaderWithClient(svc, func(u *s3manager.Uploader) {
 		if s.partSize > 5*1024*1024 {
 			u.PartSize = s.partSize
+			u.Concurrency = 1
 		}
 		u.MaxUploadParts = int((5 * 1024 * 1024 * 1024 * 1024) / u.PartSize)
 	})
