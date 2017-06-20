@@ -1,10 +1,11 @@
 {
     "FileCount": 2,
     "Storage": {
-        "Type": "Local",
-        "Path": "/tmp/test/",
-        "BufferSizeM": 1024
-    },
+        "Type": "S3",
+        "Region": "cn-north-1",
+        "Bucket": "live",
+        "PartSizeM": 5
+    },  
     "Format": {
         "Type": "csv",
         "delimiter": "\t",
@@ -14,7 +15,7 @@
         "haveTitleLine": false
     },
     "File": {
-        "RowCount": 5,
+        "RowCount": 600,
         "Name": "$0[4]/$1[2]/output-$0.csv",
         "Data": {
             "0": {

@@ -2,7 +2,6 @@ package data
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"strings"
 )
@@ -12,6 +11,70 @@ const defaultQuoteChar = "\""
 const defaultEscapeChar = ""
 const defaultLineTeriminator = "\r\n"
 
+type csvReader struct {
+	csvContent  *csv
+	rowNow      int
+	buffer      []byte
+	bufferPoint int
+	step        int
+}
+
+func min(x, y int) int {
+	if x < y {
+		return x
+	}
+	return y
+}
+
+func (r *csvReader) Read(b []byte) (copyed int, err error) {
+	max := len(b)
+	if r.step == 0 {
+		r.step = 1
+	}
+
+	bufferLength := len(r.buffer)
+	bufferLeft := bufferLength - r.bufferPoint
+	if r.rowNow > r.csvContent.rowCount && bufferLeft <= 0 {
+		return 0, io.EOF
+	}
+
+	readTimes := 1
+	for {
+		if copyed >= max {
+			break
+		}
+
+		bufferLength = len(r.buffer)
+		bufferLeft = bufferLength - r.bufferPoint
+		if bufferLeft > 0 {
+			willCopy := min(max-copyed, bufferLeft)
+			n := copy(b[copyed:], r.buffer[r.bufferPoint:r.bufferPoint+willCopy])
+			copyed += n
+			r.bufferPoint += n
+			continue
+		}
+
+		if r.rowNow > r.csvContent.rowCount {
+			break
+		}
+
+		step := r.step * readTimes
+		r.buffer, err = r.csvContent.line(r.rowNow, min(r.rowNow+step, r.csvContent.rowCount+1))
+		if err != nil {
+			return 0, err
+		}
+		readTimes += step
+		r.bufferPoint = 0
+		r.rowNow += step
+	}
+
+	if readTimes > r.step+1 {
+		r.step = r.step*readTimes + 1
+	}
+
+	return
+}
+
 type csv struct {
 	file
 	haveTitleLine  bool
@@ -19,6 +82,7 @@ type csv struct {
 	quoteChar      string
 	escapeChar     string
 	lineTerminator string
+	buffer         *bytes.Buffer
 }
 
 func newCsv(rowCount int, namePart []namePart, delimiter string, quoteChar string, escapeChar string, lineTerminator string, haveTitleLine bool) *csv {
@@ -37,49 +101,72 @@ func newCsv(rowCount int, namePart []namePart, delimiter string, quoteChar strin
 }
 
 func (c *csv) Clone() FileData {
-	return newCsv(c.rowCount, c.namePart, c.delimiter, c.quoteChar, c.escapeChar, c.lineTerminator, c.haveTitleLine)
-}
+	b := make([]byte, 1024*1024)
+	buf := bytes.NewBuffer(b)
 
-func (c *csv) line(columns []string) []byte {
-	var buffer bytes.Buffer
-	lineStart := true
-	for _, column := range columns {
-		if lineStart {
-			lineStart = false
-		} else {
-			buffer.WriteString(c.delimiter)
-		}
-
-		if c.escapeChar != "" {
-			column = strings.Replace(column, c.quoteChar, c.escapeChar, -1)
-		}
-
-		buffer.WriteString(fmt.Sprintf("%v%v%v", c.quoteChar, column, c.quoteChar))
+	return &csv{
+		file:           c.file,
+		haveTitleLine:  c.haveTitleLine,
+		delimiter:      c.delimiter,
+		quoteChar:      c.quoteChar,
+		escapeChar:     c.escapeChar,
+		lineTerminator: c.lineTerminator,
+		buffer:         buf,
 	}
-
-	return buffer.Bytes()
 }
 
-func (c *csv) Data() (io.ReadSeeker, error) {
-	var buffer bytes.Buffer
+func (c *csv) line(rowStart int, rowMax int) ([]byte, error) {
+	c.buffer.Reset()
+
+	var err error
+	var columns []string
+
+	for i := rowStart; i < rowMax; i++ {
+		if i == 0 {
+			columns = c.row.Title()
+			i++
+		} else {
+			columns, err = c.row.Data()
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		lineStart := true
+		for _, column := range columns {
+			if lineStart {
+				lineStart = false
+			} else {
+				c.buffer.WriteString(c.delimiter)
+			}
+
+			if c.escapeChar != "" {
+				column = strings.Replace(column, c.quoteChar, c.escapeChar, -1)
+			}
+
+			c.buffer.WriteString(c.quoteChar)
+			c.buffer.WriteString(column)
+			c.buffer.WriteString(c.quoteChar)
+		}
+
+		c.buffer.WriteString(c.lineTerminator)
+	}
+	return c.buffer.Bytes(), nil
+}
+
+func (c *csv) Data() (io.Reader, error) {
+	var rowNow int
 
 	if c.haveTitleLine {
-		titleData := c.row.Title()
-		buffer.Write(c.line(titleData))
-		buffer.WriteString(c.lineTerminator)
+		rowNow = 0
+	} else {
+		rowNow = 1
 	}
 
-	for i := 0; i < c.rowCount; i++ {
-		rowData, err := c.row.Data()
-		if err != nil {
-			return nil, err
-		}
-		buffer.Write(c.line(rowData))
-
-		buffer.WriteString(c.lineTerminator)
-	}
-
-	return bytes.NewReader(buffer.Bytes()), nil
+	return &csvReader{
+		csvContent: c,
+		rowNow:     rowNow,
+	}, nil
 }
 
 func (c *csv) Save() (int64, error) {

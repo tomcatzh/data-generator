@@ -1,6 +1,7 @@
 package data
 
 import (
+	"io"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -22,7 +23,8 @@ func TestCsv(t *testing.T) {
 			value:    "abc",
 		},
 	}
-	c := newCsv(2, namePart, defaultDelimiter, defaultQuoteChar, defaultEscapeChar, defaultLineTeriminator, true)
+	cA := newCsv(2, namePart, defaultDelimiter, defaultQuoteChar, defaultEscapeChar, defaultLineTeriminator, true)
+	c := cA.Clone()
 	c.AddColumn(newFixString("test", "a"))
 	c.AddColumn(newFixString("test", "b"))
 	c.AddColumn(newFixString("test", "cccc"))
@@ -52,7 +54,7 @@ func TestCsv(t *testing.T) {
 		t.Errorf("Unexcepted name: %v", s)
 	}
 
-	c.SetStorage(newStorageLocal(tmpPath))
+	c.SetStorage(newStorageLocal(tmpPath, 8))
 
 	len, err := c.Save()
 	if err != nil {
@@ -78,7 +80,8 @@ func TestCsv(t *testing.T) {
 
 func TestCsv2(t *testing.T) {
 	namePart := []namePart{}
-	c := newCsv(2, namePart, defaultDelimiter, defaultQuoteChar, "\\", defaultLineTeriminator, false)
+	cA := newCsv(2, namePart, defaultDelimiter, defaultQuoteChar, "\\", defaultLineTeriminator, false)
+	c := cA.Clone()
 	c.AddColumn(newFixString("test", "a\""))
 	c.AddColumn(newFixString("test", "b"))
 	c.AddColumn(newFixString("test", "c"))
@@ -94,5 +97,65 @@ func TestCsv2(t *testing.T) {
 	s := string(b)
 	if s != "\"a\\\"\",\"b\",\"c\"\r\n\"a\\\"\",\"b\",\"c\"\r\n" {
 		t.Errorf("Unexcepted result: %v", s)
+	}
+}
+
+func TestCsvStep(t *testing.T) {
+	namePart := []namePart{}
+	cA := newCsv(20, namePart, defaultDelimiter, defaultQuoteChar, "\\", defaultLineTeriminator, true)
+	c := cA.Clone()
+	c.AddColumn(newFixString("test", "a\""))
+	c.AddColumn(newFixString("test", "b"))
+	c.AddColumn(newFixString("test", "c"))
+
+	r, err := c.Data()
+	if err != nil {
+		t.Errorf("Unexcepted error: %v", err)
+	}
+
+	b := make([]byte, 100)
+
+	for err != io.EOF {
+		_, err = r.Read(b)
+	}
+}
+
+func TestSmallRead(t *testing.T) {
+	namePart := []namePart{}
+	cA := newCsv(2, namePart, defaultDelimiter, defaultQuoteChar, "\\", defaultLineTeriminator, false)
+	c := cA.Clone()
+	c.AddColumn(newFixString("test", "a"))
+	c.AddColumn(newFixString("test", "b"))
+	c.AddColumn(newFixString("test", "c"))
+
+	r, err := c.Data()
+	if err != nil {
+		t.Errorf("Unexcepted error: %v", err)
+	}
+
+	buf := make([]byte, 10)
+
+	n, err := r.Read(buf)
+	if err != nil {
+		t.Errorf("Unexcepted error: %v", err)
+	}
+	if n != 10 {
+		t.Errorf("Unexcepted bytes: %v", n)
+	}
+
+	n, err = r.Read(buf)
+	if err != nil {
+		t.Errorf("Unexcepted error: %v", err)
+	}
+	if n != 10 {
+		t.Errorf("Unexcepted bytes: %v", n)
+	}
+
+	n, err = r.Read(buf)
+	if err != nil {
+		t.Errorf("Unexcepted error: %v", err)
+	}
+	if n != 6 {
+		t.Errorf("Unexcepted bytes: %v", n)
 	}
 }

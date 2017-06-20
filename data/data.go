@@ -71,7 +71,7 @@ type templateColumn struct {
 
 // FileData is a handler of file for data generator
 type FileData interface {
-	Data() (io.ReadSeeker, error)
+	Data() (io.Reader, error)
 	Name() (string, error)
 	AddColumn(column columnData)
 	Clone() FileData
@@ -270,19 +270,19 @@ func NewTemplate(templateFile string) (*Template, error) {
 		haveTitleLine, ok := format["haveTitleLine"].(bool)
 
 		delimiter, ok := format["delimiter"].(string)
-		if !ok || delimiter == "" {
+		if !ok {
 			delimiter = defaultDelimiter
 		}
 		quotechar, ok := format["quotechar"].(string)
-		if !ok || quotechar == "" {
+		if !ok {
 			quotechar = defaultQuoteChar
 		}
 		escapechar, ok := format["escapechar"].(string)
-		if !ok || escapechar == "" {
+		if !ok {
 			escapechar = defaultEscapeChar
 		}
 		lineterminator, ok := format["lineterminator"].(string)
-		if !ok || lineterminator == "" {
+		if !ok {
 			lineterminator = defaultLineTeriminator
 		}
 		csv := newCsv(int(rowCount), part, delimiter, quotechar, escapechar, lineterminator, haveTitleLine)
@@ -331,7 +331,7 @@ func NewTemplate(templateFile string) (*Template, error) {
 		}
 
 		switch ctype {
-		case "datetime":
+		case "Datetime":
 			dformat, ok := c["Format"].(string)
 			if !ok || dformat == "" {
 				dformat = time.RFC3339
@@ -369,13 +369,13 @@ func NewTemplate(templateFile string) (*Template, error) {
 			}
 
 			switch dstepType {
-			case "Fix":
+			case "Increase":
 				dstepDuration, ok := dstep["Duration"].(string)
 				if !ok || dstepDuration == "" {
 					return nil, fmt.Errorf("%v column does not have datetime fix duration", i)
 				}
 
-				cdata.column, err = newDatetimeFix(ctitle, dformat, dstepDuration, dstart, dend)
+				cdata.column, err = newDatetimeIncrease(ctitle, dformat, dstepDuration, dstart, dend)
 				if err != nil {
 					return nil, err
 				}
@@ -402,21 +402,21 @@ func NewTemplate(templateFile string) (*Template, error) {
 			default:
 				return nil, fmt.Errorf("Unexecpted datetime step type in column %v: %v", i, dstepType)
 			}
-		case "string":
+		case "String":
 			sstruct, ok := c["Struct"].(string)
 			if !ok || sstruct == "" {
 				return nil, fmt.Errorf("%v column does not have string struct", i)
 			}
 
 			switch sstruct {
-			case "fix":
+			case "Fix":
 				sfixValue, ok := c["Value"].(string)
 				if !ok {
 					return nil, fmt.Errorf("%v column does not have string fix value", i)
 				}
 
 				cdata.column = newFixString(ctitle, sfixValue)
-			case "enum":
+			case "Enum":
 				sEnumValue, ok := c["Value"].([]interface{})
 				if !ok {
 					return nil, fmt.Errorf("%v column does not have string enum value", i)
@@ -430,6 +430,40 @@ func NewTemplate(templateFile string) (*Template, error) {
 				cdata.column = newEnumString(ctitle, sEnumString)
 			default:
 				return nil, fmt.Errorf("Unexecpted string struct in column %v: %v", i, sstruct)
+			}
+		case "Numeric":
+			nformat, ok := c["Format"].(string)
+			if !ok || nformat == "" {
+				return nil, fmt.Errorf("%v column does not have numeric format", i)
+			}
+
+			nstep, ok := c["Step"].(map[string]interface{})
+			if !ok {
+				return nil, fmt.Errorf("%v column does not have numeric step section", i)
+			}
+
+			switch nformat {
+			case "Integer":
+				niMax, ok := nstep["Max"].(float64)
+				if !ok {
+					return nil, fmt.Errorf("%v column does not have datetime random max", i)
+				}
+				niMin, ok := nstep["Min"].(float64)
+				if !ok {
+					return nil, fmt.Errorf("%v column does not have datetime random min", i)
+				}
+				cdata.column = newRandomInteger(ctitle, int(niMax), int(niMin))
+			default:
+				return nil, fmt.Errorf("Unexecpted numeric format in column %v: %v", i, nformat)
+			}
+		case "IPv4":
+			icidr, ok := c["CIDR"].(string)
+			if !ok || icidr == "" {
+				return nil, fmt.Errorf("%v column does not have IPv4 CIDR", i)
+			}
+			cdata.column, err = newRandomIPv4(ctitle, icidr)
+			if err != nil {
+				return nil, fmt.Errorf("Unexecpted CIDR format in column %v: %v", i, icidr)
 			}
 		default:
 			return nil, fmt.Errorf("Unexecpted column type in column %v: %v", i, ctype)
@@ -451,7 +485,28 @@ func NewTemplate(templateFile string) (*Template, error) {
 			if !ok || spath == "" {
 				spath = "."
 			}
-			result.storage = newStorageLocal(spath)
+			sbufferSize, ok := storage["BufferSizeM"].(float64)
+			var bufsize int
+			if !ok || sbufferSize <= 0 {
+				bufsize = defaultBufferSize
+			} else {
+				bufsize = int(sbufferSize)
+			}
+			result.storage = newStorageLocal(spath, bufsize)
+		case "S3":
+			sregion, ok := storage["Region"].(string)
+			if !ok || sregion == "" {
+				return nil, errors.New("Template do not have S3 region")
+			}
+			sbucket, ok := storage["Bucket"].(string)
+			if !ok || sbucket == "" {
+				return nil, errors.New("Template do not have S3 bucket")
+			}
+			spartSizeM, ok := storage["PartSizeM"].(float64)
+			if !ok {
+				spartSizeM = 0
+			}
+			result.storage = newStorageS3(sregion, sbucket, int64(spartSizeM)*1024*1024)
 		default:
 			return nil, fmt.Errorf("Unexecepted Storage type: %v", stype)
 		}
@@ -463,7 +518,7 @@ func NewTemplate(templateFile string) (*Template, error) {
 }
 
 type storage interface {
-	Save(key string, reader io.ReadSeeker) (int64, error)
+	Save(key string, reader io.Reader) (int64, error)
 }
 
 func (f *file) AddColumn(column columnData) {

@@ -16,12 +16,14 @@ func TestDatetimeRandom(t *testing.T) {
 
 	for i := 0; i < 10; i++ {
 		data1, err := newDatetimeRandom("test", time.UnixDate, "m", 10, -2, stamp, maxTime)
+
 		if err != nil {
 			t.Errorf("Someting wrong when new datetime: %v", err)
 		} else if data1.title != "test" {
 			t.Errorf("Title error: %v", data1.Title())
 		}
-		result1, err := data1.Data()
+		data1A := data1.Clone()
+		result1, err := data1A.Data()
 		if err != nil {
 			t.Errorf("Something wrong when get datetime data: %v", err)
 		}
@@ -34,22 +36,23 @@ func TestDatetimeRandom(t *testing.T) {
 	}
 
 	for i := 0; i < 10; i++ {
-		data2, err := newDatetimeRandom("test", time.UnixDate, "m", 10, -2, stamp, stamp.Truncate(5*time.Minute))
+		data2, err := newDatetimeRandom("test", time.UnixDate, "m", 10, -2, stamp, stamp.Add(-5*time.Minute))
 		if err != nil {
 			t.Errorf("Someting wrong when new datetime: %v", err)
 		} else if data2.title != "test" {
 			t.Errorf("Title error: %v", data2.Title())
 		}
-		_, err = data2.Data()
+		data2A := data2.Clone()
+		result, err := data2A.Data()
 		if err == nil {
-			t.Errorf("Excepted an error, but nil")
+			t.Errorf("Excepted an error, but nil: %v vs %v", stamp.Add(-5*time.Minute).Format(time.UnixDate), result)
 		}
 	}
 }
 
 func TestDatetimeFix(t *testing.T) {
 	stamp, _ := time.Parse(time.UnixDate, "Thu Jun 1 17:00:00 CST 2017")
-	data1, err := newDatetimeFix("test", time.UnixDate, "3m", stamp, maxTime)
+	data1, err := newDatetimeIncrease("test", time.UnixDate, "3m", stamp, maxTime)
 	if err != nil {
 		t.Errorf("Someting wrong when new datetime: %v", err)
 	} else if data1.title != "test" {
@@ -63,7 +66,7 @@ func TestDatetimeFix(t *testing.T) {
 	}
 
 	stampEnd, _ := time.Parse(time.UnixDate, "Thu Jun 1 17:02:00 CST 2017")
-	data2, _ := newDatetimeFix("test", time.UnixDate, "3m", stamp, stampEnd)
+	data2, _ := newDatetimeIncrease("test", time.UnixDate, "3m", stamp, stampEnd)
 	if err != nil {
 		t.Errorf("Someting wrong when new datetime: %v", err)
 	}
@@ -75,7 +78,7 @@ func TestDatetimeFix(t *testing.T) {
 
 func TestStepFix(t *testing.T) {
 	duration, _ := time.ParseDuration("3m")
-	step := datetimeFixStep{duration: duration}
+	step := datetimeIncreaseStep{duration: duration}
 
 	stamp, _ := time.Parse(time.UnixDate, "Thu Jun 1 17:00:00 CST 2017")
 
@@ -98,14 +101,13 @@ func TestStepFix(t *testing.T) {
 }
 
 func TestStepRandom(t *testing.T) {
-	rand.Seed(time.Now().UTC().UnixNano())
-
 	durationN, _ := time.ParseDuration("12m")
 	durationA, _ := time.ParseDuration("-2m")
 
 	step := datetimeRandomStep{
 		durationN: durationN,
 		durationA: durationA,
+		rand:      rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
 
 	stamp := time.Now()
