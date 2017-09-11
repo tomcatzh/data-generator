@@ -1,7 +1,6 @@
 package data
 
 import (
-	"fmt"
 	"math"
 	"math/rand"
 	"strconv"
@@ -57,7 +56,7 @@ func (f *randomFloat) Clone() columnData {
 }
 
 func (f *randomFloat) Data() (string, error) {
-	return fmt.Sprintf("%v", float64(f.rand.Int63n(f.n)+f.a)/float64(f.mod)), nil
+	return strconv.FormatFloat(float64(f.rand.Int63n(f.n)+f.a)/float64(f.mod), 'f', 6, 64), nil
 }
 
 func newRandomFloat(title string, max float64, min float64, decimal int) *randomFloat {
