@@ -1,9 +1,9 @@
 {
-    "FileCount": 2,
+    "FileCount": 5,
     "Storage": {
         "Type": "Local",
         "Path": "/tmp/test/",
-        "BufferSizeM": 1024
+        "BufferSizeM": 10
     },
     "Format": {
         "Type": "csv",
@@ -15,40 +15,32 @@
         "haveTitleLine": false
     },
     "File": {
-        "RowCount": 5,
-        "Name": "$0[4]/$1[2]/output-$0.csv",
+        "RowCount": 20,
+        "Name": "$0[10]/output-$0[10]-$0[11-13].csv.gz",
         "Data": {
             "0": {
                 "Title": "DateObject",
                 "Type": "Datetime",
-                "Format": "2006-01-02",
-                "Change": "PerFile",
-                "Step": {
-                    "Type": "Increase",
-                    "Duration": "24h"
-                },
-                "Start": "2015-01-01"
-            },
-            "1": {
-                "Title": "Time",
-                "Type": "Datetime",
-                "Format": "15:04:05",
-                "Change": "PerRow",
+                "Format": "2006-01-02\t15:04:05",
+                "Change": "PerRowAndFile",
                 "Step": {
                     "Type": "Random",
-                    "Unit": "ms",
-                    "Max": 100,
-                    "Min": 1
+                    "Unit": "us",
+                    "Max": 10000,
+                    "Min": 1000,
+                    "Start": "2015-01-01\t00:00:00"
                 },
-                "Start": "00:00:00"
+                "FileStep": {
+                    "Duration": "1h"
+                }
             },
-            "2": {
+            "1": {
                 "Title": "Location",
                 "Type": "String",
                 "Struct": "Enum",
                 "Value": ["LHR3", "MIA3", "FRA2", "LAX1", "SFO4", "DUB2"]
             },
-            "3": {
+            "2": {
                 "Title": "Bytes",
                 "Type": "Numeric",
                 "Format": "Integer",
@@ -58,42 +50,42 @@
                     "Min": 1
                 } 
             },
-            "4": {
+            "3": {
                 "Title": "RequestIP",
                 "Type": "IPv4",
                 "CIDR": "10.0.0.0/8"
             },
-            "5": {
+            "4": {
                 "Title": "Method",
                 "Type": "String",
                 "Struct": "Enum",
                 "Value": ["GET", "POST"]
             },
-            "6": {
+            "5": {
                 "Title": "Host",
                 "Type": "String",
                 "Struct": "Fix",
                 "Value": "eabcd12345678.cloudfront.net"
             },
-            "7": {
+            "6": {
                 "Title": "Uri",
                 "Type": "String",
                 "Struct": "Enum",
                 "Value": ["/test-image-1.jpeg", "/test-image-2.jpeg", "/test-image-3.jpeg"]
             },
-            "8": {
+            "7": {
                 "Title": "Status",
                 "Type": "String",
                 "Struct": "Enum",
                 "Value": ["200", "304", "404", "500", "401"]
             },
-            "9": {
+            "8": {
                 "Title": "Referrer",
                 "Type": "String",
                 "Struct": "Fix",
                 "Value": "-"
             },
-            "10": {
+            "9": {
                 "Title": "Agent",
                 "Type": "String",
                 "Struct": "Enum",

@@ -47,18 +47,30 @@ func (s *datetimeRandomStep) Next(now time.Time) time.Time {
 
 type datetime struct {
 	column
-	format string
-	now    time.Time
-	end    time.Time
-	step   datetimeStep
-	buffer []byte
+	format   string
+	now      time.Time
+	end      time.Time
+	step     datetimeStep
+	fileStep *datetimeIncreaseStep
+	fileNow  time.Time
+	buffer   []byte
+}
+
+// A TimeOver is an error type of end time exceeded.
+type TimeOver struct {
+	now time.Time
+	end time.Time
+}
+
+func (e *TimeOver) Error() string {
+	return fmt.Sprintf("Time is over now[%v] end[%v]", e.now.Format(time.ANSIC), e.end.Format(time.ANSIC))
 }
 
 func (d *datetime) Data() (string, error) {
 	stamp := d.step.Next(d.now)
 
 	if stamp.After(d.end) {
-		return "", errors.New("Arrived at the end time")
+		return "", &TimeOver{now: stamp, end: d.end}
 	}
 
 	d.now = stamp
@@ -77,37 +89,68 @@ func (d *datetime) Clone() columnData {
 		b = make([]byte, 0, max)
 	}
 
+	end := d.end
+
+	if d.fileStep != nil && d.fileStep.duration > 0 {
+		d.fileNow = d.fileStep.Next(d.fileNow)
+		end = d.fileStep.Next(d.fileNow)
+	}
+
 	result := &datetime{
-		column: d.column,
-		format: d.format,
-		now:    d.now,
-		end:    d.end,
-		step:   d.step.Clone(),
-		buffer: b,
+		column:  d.column,
+		format:  d.format,
+		now:     d.now,
+		end:     end,
+		step:    d.step.Clone(),
+		fileNow: d.fileNow,
+		buffer:  b,
+	}
+
+	if d.fileStep != nil && d.fileStep.duration > 0 {
+		d.now = d.fileStep.Next(d.now)
 	}
 
 	return result
 }
 
-func newDatetimeIncrease(title string, format string, duration string, start time.Time, end time.Time) (*datetime, error) {
+func fileStep(duration string) (time.Duration, error) {
+	if duration == "" {
+		return 0, nil
+	}
+
+	return time.ParseDuration(duration)
+}
+
+func newDatetimeIncrease(title string, format string, duration string, start time.Time, end time.Time, fileDuration string) (*datetime, error) {
+	fDuration, err := fileStep(fileDuration)
+	if err != nil {
+		return nil, err
+	}
+
 	durationNano, err := time.ParseDuration(duration)
 	if err != nil {
 		return nil, err
 	}
-	step := datetimeIncreaseStep{duration: durationNano}
 
 	return &datetime{
 		column: column{
 			title: title,
 		},
-		format: format,
-		now:    start,
-		end:    end,
-		step:   &step,
+		format:   format,
+		now:      start.Add(-durationNano),
+		end:      end,
+		step:     &datetimeIncreaseStep{duration: durationNano},
+		fileStep: &datetimeIncreaseStep{duration: fDuration},
+		fileNow:  start.Add(-fDuration),
 	}, nil
 }
 
-func newDatetimeRandom(title string, format string, unit string, max int, min int, start time.Time, end time.Time) (*datetime, error) {
+func newDatetimeRandom(title string, format string, unit string, max int, min int, start time.Time, end time.Time, fileDuration string) (*datetime, error) {
+	fDuration, err := fileStep(fileDuration)
+	if err != nil {
+		return nil, err
+	}
+
 	n := max - min
 	if n <= 0 {
 		return nil, errors.New("Max must bigger the min")
@@ -120,10 +163,6 @@ func newDatetimeRandom(title string, format string, unit string, max int, min in
 	if err != nil {
 		return nil, err
 	}
-	step := datetimeRandomStep{
-		durationN: durationN,
-		durationA: durationA,
-	}
 
 	return &datetime{
 		column: column{
@@ -132,6 +171,11 @@ func newDatetimeRandom(title string, format string, unit string, max int, min in
 		format: format,
 		now:    start,
 		end:    end,
-		step:   &step,
+		step: &datetimeRandomStep{
+			durationN: durationN,
+			durationA: durationA,
+		},
+		fileStep: &datetimeIncreaseStep{duration: fDuration},
+		fileNow:  start.Add(-fDuration),
 	}, nil
 }
