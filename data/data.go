@@ -2,12 +2,14 @@ package data
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -35,12 +37,24 @@ func (t *Template) getFile() (FileData, error) {
 			result.AddColumn(s)
 		case columnChangePerRow:
 			result.AddColumn(c.column.Clone())
+		case columnChangePerRowAndFile:
+			result.AddColumn(c.column.Clone())
 		}
 	}
 
 	result.SetStorage(t.storage)
 
 	return result, nil
+}
+
+func (t *Template) Split(count int) <-chan io.Reader {
+	c := make(chan io.Reader)
+	go func() {
+		for i := 0; i < count; i++ {
+
+		}
+	}()
+	return c
 }
 
 // Iterate returns FileData rangeable list
@@ -62,6 +76,7 @@ func (t *Template) Iterate() <-chan FileData {
 const (
 	columnChangePerFile = iota
 	columnChangePerRow
+	columnChangePerRowAndFile
 )
 
 type templateColumn struct {
@@ -86,10 +101,11 @@ const (
 )
 
 type namePart struct {
-	partType  int
-	value     string
-	index     int
-	substring int
+	partType       int
+	value          string
+	index          int
+	substringStart int
+	substringEnd   int
 }
 
 type file struct {
@@ -121,7 +137,7 @@ func (f *file) Name() (string, error) {
 			if err != nil {
 				return "", err
 			}
-			result.WriteString(s[0:p.substring])
+			result.WriteString(s[p.substringStart:p.substringEnd])
 		}
 	}
 
@@ -181,6 +197,9 @@ func NewTemplate(templateFile string) (*Template, error) {
 	var s bytes.Buffer
 	var index int
 	var part []namePart
+	substringStart := 0
+	substringEnd := 0
+
 	for _, c := range []byte(fileName) {
 		if isNormal {
 			if c == '$' {
@@ -224,19 +243,27 @@ func NewTemplate(templateFile string) (*Template, error) {
 		} else if isSubData {
 			if c >= '0' && c <= '9' {
 				s.WriteByte(c)
+			} else if c == '-' {
+				substringStart, err = strconv.Atoi(s.String())
+				if err != nil {
+					return nil, err
+				}
+				s.Reset()
 			} else if c == ']' {
-				substring, err := strconv.Atoi(s.String())
+				substringEnd, err = strconv.Atoi(s.String())
 				if err != nil {
 					return nil, err
 				}
 				s.Reset()
 
 				part = append(part, namePart{
-					partType:  namePartTypeSubData,
-					index:     index,
-					substring: substring,
+					partType:       namePartTypeSubData,
+					index:          index,
+					substringStart: substringStart,
+					substringEnd:   substringEnd,
 				})
 
+				substringStart = 0
 				isSubData = false
 				isNormal = true
 			} else {
@@ -269,8 +296,43 @@ func NewTemplate(templateFile string) (*Template, error) {
 	case "csv":
 		haveTitleLine, ok := format["haveTitleLine"].(bool)
 
-		delimiter, ok := format["delimiter"].(string)
+		csvCompress := csvNoCompress
+		var csvCompressLevel int
+		compress, ok := format["compress"].(string)
 		if !ok {
+			compress = "none"
+		}
+		c := strings.Split(compress, ":")
+		var compressType, compressLevel string
+		if len(c) == 1 {
+			compressType = compress
+			compressLevel = "normal"
+		} else {
+			compressType = c[0]
+			compressLevel = c[1]
+		}
+
+		switch compressType {
+		case "gzip":
+			csvCompress = csvGzipCompress
+			switch compressLevel {
+			case "normal":
+				csvCompressLevel = gzip.DefaultCompression
+			case "fastest":
+				csvCompressLevel = gzip.BestSpeed
+			case "best":
+				csvCompressLevel = gzip.BestCompression
+			default:
+				return nil, fmt.Errorf("unknow compress level: %v", compressLevel)
+			}
+		case "none":
+			csvCompress = csvNoCompress
+		default:
+			return nil, fmt.Errorf("unknow compress type: %v", compressType)
+		}
+
+		delimiter, ok := format["delimiter"].(string)
+		if !ok || delimiter == "" {
 			delimiter = defaultDelimiter
 		}
 		quotechar, ok := format["quotechar"].(string)
@@ -278,14 +340,14 @@ func NewTemplate(templateFile string) (*Template, error) {
 			quotechar = defaultQuoteChar
 		}
 		escapechar, ok := format["escapechar"].(string)
-		if !ok {
+		if !ok || escapechar == "" {
 			escapechar = defaultEscapeChar
 		}
 		lineterminator, ok := format["lineterminator"].(string)
-		if !ok {
+		if !ok || lineterminator == "" {
 			lineterminator = defaultLineTeriminator
 		}
-		csv := newCsv(int(rowCount), part, delimiter, quotechar, escapechar, lineterminator, haveTitleLine)
+		csv := newCsv(int(rowCount), part, delimiter, quotechar, escapechar, lineterminator, haveTitleLine, csvCompress, csvCompressLevel)
 
 		result.file = csv
 	default:
@@ -320,6 +382,8 @@ func NewTemplate(templateFile string) (*Template, error) {
 				cdata.columnMethod = columnChangePerFile
 			case "PerRow":
 				cdata.columnMethod = columnChangePerRow
+			case "PerRowAndFile":
+				cdata.columnMethod = columnChangePerRowAndFile
 			default:
 				return nil, fmt.Errorf("Unexecpted colomn change method in column %v: %v", i, cchange)
 			}
@@ -337,7 +401,25 @@ func NewTemplate(templateFile string) (*Template, error) {
 				dformat = time.RFC3339
 			}
 
-			dstartString, ok := c["Start"].(string)
+			var dFileDuration string
+			if cdata.columnMethod == columnChangePerRowAndFile {
+				dfileStep, ok := c["FileStep"].(map[string]interface{})
+				if !ok {
+					return nil, fmt.Errorf("%v column does not have file step section", i)
+				}
+
+				dFileDuration, ok = dfileStep["Duration"].(string)
+				if !ok || dFileDuration == "" {
+					return nil, fmt.Errorf("%v column does not have file duration", i)
+				}
+			}
+
+			dstep, ok := c["Step"].(map[string]interface{})
+			if !ok {
+				return nil, fmt.Errorf("%v column does not have datetime step section", i)
+			}
+
+			dstartString, ok := dstep["Start"].(string)
 			if !ok || dstartString == "" {
 				return nil, fmt.Errorf("%v column does not have datetime start stamp", i)
 			}
@@ -348,7 +430,7 @@ func NewTemplate(templateFile string) (*Template, error) {
 			}
 
 			var dend time.Time
-			dendString, ok := c["End"].(string)
+			dendString, ok := dstep["End"].(string)
 			if !ok || dendString == "" {
 				dend = maxTime
 			} else {
@@ -356,11 +438,6 @@ func NewTemplate(templateFile string) (*Template, error) {
 				if err != nil {
 					return nil, err
 				}
-			}
-
-			dstep, ok := c["Step"].(map[string]interface{})
-			if !ok {
-				return nil, fmt.Errorf("%v column does not have datetime step section", i)
 			}
 
 			dstepType, ok := dstep["Type"].(string)
@@ -375,7 +452,7 @@ func NewTemplate(templateFile string) (*Template, error) {
 					return nil, fmt.Errorf("%v column does not have datetime fix duration", i)
 				}
 
-				cdata.column, err = newDatetimeIncrease(ctitle, dformat, dstepDuration, dstart, dend)
+				cdata.column, err = newDatetimeIncrease(ctitle, dformat, dstepDuration, dstart, dend, dFileDuration)
 				if err != nil {
 					return nil, err
 				}
@@ -395,7 +472,7 @@ func NewTemplate(templateFile string) (*Template, error) {
 					return nil, fmt.Errorf("%v column does not have datetime random min", i)
 				}
 
-				cdata.column, err = newDatetimeRandom(ctitle, dformat, dstepUnit, int(dstepMax), int(dstepMin), dstart, dend)
+				cdata.column, err = newDatetimeRandom(ctitle, dformat, dstepUnit, int(dstepMax), int(dstepMin), dstart, dend, dFileDuration)
 				if err != nil {
 					return nil, err
 				}

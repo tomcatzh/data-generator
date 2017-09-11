@@ -14,16 +14,16 @@ func TestCsv(t *testing.T) {
 			index:    0,
 		},
 		namePart{
-			partType:  namePartTypeSubData,
-			index:     2,
-			substring: 2,
+			partType:     namePartTypeSubData,
+			index:        2,
+			substringEnd: 2,
 		},
 		namePart{
 			partType: namePartTypeFix,
 			value:    "abc",
 		},
 	}
-	cA := newCsv(2, namePart, defaultDelimiter, defaultQuoteChar, defaultEscapeChar, defaultLineTeriminator, true)
+	cA := newCsv(2, namePart, defaultDelimiter, defaultQuoteChar, defaultEscapeChar, defaultLineTeriminator, true, csvNoCompress, 0)
 	c := cA.Clone()
 	c.AddColumn(newFixString("test", "a"))
 	c.AddColumn(newFixString("test", "b"))
@@ -80,7 +80,7 @@ func TestCsv(t *testing.T) {
 
 func TestCsv2(t *testing.T) {
 	namePart := []namePart{}
-	cA := newCsv(2, namePart, defaultDelimiter, defaultQuoteChar, "\\", defaultLineTeriminator, false)
+	cA := newCsv(2, namePart, defaultDelimiter, defaultQuoteChar, "\\", defaultLineTeriminator, false, csvNoCompress, 0)
 	c := cA.Clone()
 	c.AddColumn(newFixString("test", "a\""))
 	c.AddColumn(newFixString("test", "b"))
@@ -100,9 +100,13 @@ func TestCsv2(t *testing.T) {
 	}
 }
 
+func TestGzip(t *testing.T) {
+
+}
+
 func TestCsvStep(t *testing.T) {
 	namePart := []namePart{}
-	cA := newCsv(20, namePart, defaultDelimiter, defaultQuoteChar, "\\", defaultLineTeriminator, true)
+	cA := newCsv(20, namePart, defaultDelimiter, defaultQuoteChar, "\\", defaultLineTeriminator, true, csvNoCompress, 0)
 	c := cA.Clone()
 	c.AddColumn(newFixString("test", "a\""))
 	c.AddColumn(newFixString("test", "b"))
@@ -122,7 +126,7 @@ func TestCsvStep(t *testing.T) {
 
 func TestSmallRead(t *testing.T) {
 	namePart := []namePart{}
-	cA := newCsv(2, namePart, defaultDelimiter, defaultQuoteChar, "\\", defaultLineTeriminator, false)
+	cA := newCsv(2, namePart, defaultDelimiter, defaultQuoteChar, "\\", defaultLineTeriminator, false, csvNoCompress, 0)
 	c := cA.Clone()
 	c.AddColumn(newFixString("test", "a"))
 	c.AddColumn(newFixString("test", "b"))
