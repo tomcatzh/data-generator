@@ -19,7 +19,7 @@ func main() {
 
 	template, err := data.NewTemplate(templateFile)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error when read template: %v", err)
+		fmt.Fprintf(os.Stderr, "Error when read template: %v\n", err)
 		os.Exit(2)
 	}
 
