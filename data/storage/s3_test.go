@@ -1,4 +1,4 @@
-package data
+package storage
 
 import (
 	"bytes"
@@ -21,7 +21,15 @@ func TestS3Save(t *testing.T) {
 	bucket := "live"
 	key := "awsstorage_test"
 
-	s := newStorageS3(region, bucket, 64*1024*1024)
+	template := map[string]interface{}{}
+	template["Region"] = region
+	template["Bucket"] = bucket
+	template["PartSizeM"] = (float64)(64)
+
+	s, err := newStorageS3(template)
+	if err != nil {
+		t.Errorf("Unexcepted error: %v", err)
+	}
 
 	l, err := s.Save(key, bytes.NewReader(buf.Bytes()))
 	if err != nil {

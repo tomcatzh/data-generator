@@ -1,4 +1,4 @@
-package data
+package storage
 
 import (
 	"bytes"
@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-const defaultBufferSize = 128 * 1024 * 1024
+const defaultBufferSize = 5
 
 type storageLocal struct {
 	path        string
@@ -17,6 +17,10 @@ type storageLocal struct {
 func (l *storageLocal) Save(key string, reader io.Reader) (int64, error) {
 	var path bytes.Buffer
 	path.WriteString(l.path)
+
+	if l.path[len(l.path)-1] != os.PathSeparator && key[0] != os.PathSeparator {
+		path.WriteByte(os.PathSeparator)
+	}
 
 	lastSeparator := strings.LastIndexByte(key, os.PathSeparator)
 	if lastSeparator != -1 {
@@ -46,7 +50,19 @@ func (l *storageLocal) Save(key string, reader io.Reader) (int64, error) {
 	return len, err
 }
 
-func newStorageLocal(path string, bufferSizeM int) *storageLocal {
+func newStorageLocal(s map[string]interface{}) *storageLocal {
+	path, ok := s["Path"].(string)
+	if !ok || path == "" {
+		path = "."
+	}
+	sbufferSize, ok := s["BufferSizeM"].(float64)
+	var bufferSizeM int
+	if !ok || sbufferSize <= 0 {
+		bufferSizeM = defaultBufferSize
+	} else {
+		bufferSizeM = int(sbufferSize)
+	}
+
 	if path[len(path)-1] == os.PathSeparator {
 		path = path[0 : len(path)-1]
 	}
