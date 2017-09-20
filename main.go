@@ -12,12 +12,12 @@ import (
 
 func main() {
 	args := os.Args[1:]
-	templateFile := "./template.json"
+	templateFile := "./templates/cloudfront_log.json"
 	if len(args) > 0 {
 		templateFile = args[0]
 	}
 
-	template, err := data.NewTemplate(templateFile)
+	template, err := data.NewFactoryFile(templateFile)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error when read template: %v\n", err)
 		os.Exit(2)
@@ -35,7 +35,7 @@ func main() {
 		wg.Add(1)
 
 		ticket.Take()
-		go func(f data.FileData) {
+		go func(f *data.File) {
 			defer ticket.Return()
 			defer wg.Done()
 			f.Save()

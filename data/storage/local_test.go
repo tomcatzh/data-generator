@@ -1,21 +1,26 @@
-package data
+package storage
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
 )
 
 func TestLocal(t *testing.T) {
-	path := "/tmp/"
+	path := "/tmp"
 
 	const content = "abcdefghijklmnopqrstuvwxyz\n"
 	r := bytes.NewReader([]byte(content))
 
-	l := newStorageLocal(path, 1)
+	template := map[string]interface{}{}
+	template["Path"] = path
+	template["BufferSizeM"] = (float64)(1)
 
-	name := "test1"
+	l := newStorageLocal(template)
+
+	name := "test/test/test1"
 	length, err := l.Save(name, r)
 	if err != nil {
 		t.Errorf("Unexcepted error: %v", err)
@@ -24,7 +29,7 @@ func TestLocal(t *testing.T) {
 		t.Errorf("Unexcepted write length: %v", length)
 	}
 
-	fullname := path + name
+	fullname := fmt.Sprintf("%v%c%v", path, os.PathSeparator, name)
 	fileContent, err := ioutil.ReadFile(fullname)
 	if err != nil {
 		t.Errorf("Unexcepted error: %v", err)
@@ -32,7 +37,7 @@ func TestLocal(t *testing.T) {
 	if string(fileContent) != content {
 		t.Errorf("Unexcepted content: %v", fileContent)
 	}
-	err = os.Remove(fullname)
+	err = os.RemoveAll("/tmp/test")
 	if err != nil {
 		t.Errorf("Unexcepted error: %v", err)
 	}

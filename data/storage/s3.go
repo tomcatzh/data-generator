@@ -1,6 +1,7 @@
-package data
+package storage
 
 import (
+	"errors"
 	"io"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -16,12 +17,25 @@ type storageS3 struct {
 }
 
 // NewStorageS3 returns storageS3 handler
-func newStorageS3(region string, bucket string, partSize int64) *storageS3 {
+func newStorageS3(s map[string]interface{}) (*storageS3, error) {
+	region, ok := s["Region"].(string)
+	if !ok || region == "" {
+		return nil, errors.New("Template do not have S3 region")
+	}
+	bucket, ok := s["Bucket"].(string)
+	if !ok || bucket == "" {
+		return nil, errors.New("Template do not have S3 bucket")
+	}
+	partSizeM, ok := s["PartSizeM"].(float64)
+	if !ok {
+		partSizeM = 0
+	}
+
 	return &storageS3{
 		config:   &aws.Config{Region: aws.String(region)},
 		bucket:   bucket,
-		partSize: partSize,
-	}
+		partSize: (int64)(partSizeM) * 1024 * 1024,
+	}, nil
 }
 
 // Save function uploads the reader to S3
