@@ -36,13 +36,13 @@ func TestCreateDatetimeFactory(t *testing.T) {
 func TestDatetimeRandom(t *testing.T) {
 	stamp := time.Now()
 
-	_, err := newDatetimeRandom(time.UnixDate, "m", 1, 1, stamp, maxTime, "")
+	_, err := newDatetimeRandom(time.UnixDate, "m", 1, 1, stamp, maxTime, "", columnChangePerRowAndFile)
 	if err == nil {
 		t.Errorf("Excepted an error, but nil")
 	}
 
 	for i := 0; i < 10; i++ {
-		data1, err := newDatetimeRandom(time.UnixDate, "m", 10, -2, stamp, maxTime, "")
+		data1, err := newDatetimeRandom(time.UnixDate, "m", 10, -2, stamp, maxTime, "", columnChangePerRowAndFile)
 		if err != nil {
 			t.Errorf("Someting wrong when new datetime: %v", err)
 		}
@@ -61,7 +61,7 @@ func TestDatetimeRandom(t *testing.T) {
 	}
 
 	for i := 0; i < 10; i++ {
-		data2, err := newDatetimeRandom(time.UnixDate, "m", 10, -2, stamp, stamp.Add(-5*time.Minute), "")
+		data2, err := newDatetimeRandom(time.UnixDate, "m", 10, -2, stamp, stamp.Add(-5*time.Minute), "", columnChangePerRowAndFile)
 		if err != nil {
 			t.Errorf("Someting wrong when new datetime: %v", err)
 		}
@@ -75,7 +75,7 @@ func TestDatetimeRandom(t *testing.T) {
 
 func TestDatetimeFix(t *testing.T) {
 	stamp, _ := time.Parse(time.UnixDate, "Thu Jun 1 17:00:00 CST 2017")
-	data1A, err := newDatetimeIncrease(time.UnixDate, "3m", stamp, maxTime, "")
+	data1A, err := newDatetimeIncrease(time.UnixDate, "3m", stamp, maxTime, "", columnChangePerRowAndFile)
 	if err != nil {
 		t.Errorf("Someting wrong when new datetime: %v", err)
 	}
@@ -88,7 +88,7 @@ func TestDatetimeFix(t *testing.T) {
 	}
 
 	stampEnd, _ := time.Parse(time.UnixDate, "Thu Jun 1 17:00:00 CST 2017")
-	data2A, err := newDatetimeIncrease(time.UnixDate, "3m", stamp, stampEnd, "")
+	data2A, err := newDatetimeIncrease(time.UnixDate, "3m", stamp, stampEnd, "", columnChangePerRowAndFile)
 	if err != nil {
 		t.Errorf("Someting wrong when new datetime: %v", err)
 	}
@@ -102,7 +102,7 @@ func TestDatetimeFix(t *testing.T) {
 
 func TestFileStep(t *testing.T) {
 	stamp, _ := time.Parse(time.UnixDate, "Thu Jun 1 17:00:00 CST 2017")
-	data1, err := newDatetimeIncrease(time.UnixDate, "30m", stamp, maxTime, "1h")
+	data1, err := newDatetimeIncrease(time.UnixDate, "30m", stamp, maxTime, "1h", columnChangePerRowAndFile)
 	if err != nil {
 		t.Errorf("Someting wrong when new datetime: %v", err)
 	}

@@ -1,0 +1,110 @@
+{
+    "FileCount": 500,
+    "Storage": {
+        "Type": "Local",
+        "Path": "/tmp/test"
+    },
+    "Format": {
+        "Type": "csv",
+        "Compress": "gzip:fastest",
+        "Delimiter": "\t",
+        "Quotechar": "",
+        "Escapechar": null,
+        "Lineterminator": null,
+        "HaveTitleLine": false
+    },
+    "File": {
+        "Name": "${l_time}[3]/${l_time}[5-6]/${l_time}[8-9]/item-${l_time}[9]-${l_time}[11-12].csv.gz",
+        "Row" : {
+            "RowCount": 20,
+            "Sequence": ["l_date", "userid", "l_time", "metalib", "struct", "entry_id", "entry_t", "entry_sv", "entry_cv"],
+            "Data": {
+                "l_date": {
+                    "Type": "Datetime",
+                    "Format": "2006-01-02",
+                    "Change": "PerFile",
+                    "Step": {
+                        "Type": "Increase",
+                        "Duration": "1h",
+                        "Start": "2015-01-01"
+                    }
+                },
+                "userid": {
+                    "Type": "Numeric",
+                    "Format": "Integer",
+                    "Step": {
+                        "Type": "Random",
+                        "Max": 1000000,
+                        "Min": 1
+                    }
+                },
+                "l_time": {
+                    "Type": "Datetime",
+                    "Format": "2006-01-02 15:04:05",
+                    "Change": "PerRowAndFile",
+                    "Step": {
+                        "Type": "Random",
+                        "Unit": "us",
+                        "Max": 10000,
+                        "Min": 1000,
+                        "Start": "2015-01-01 00:00:00"
+                    },
+                    "FileStep": {
+                        "Duration": "1h"
+                    }
+                },
+                "metalib": {
+                    "Type": "String",
+                    "Struct": "Enum",
+                    "Values": ["ObjectLog", "GameLog", "SomethingLog", "OtherLog"]
+                },
+                "struct": {
+                    "Type": "Numeric",
+                    "Format": "Integer",
+                    "Step": {
+                        "Type": "Random",
+                        "Max": 100,
+                        "Min": 1
+                    }
+                },
+                "entry_id": {
+                    "Type": "Numeric",
+                    "Format": "Integer",
+                    "Step": {
+                        "Type": "Random",
+                        "Max": 25000,
+                        "Min": 1
+                    }
+                },
+                "entry_t": {
+                    "Type": "Numeric",
+                    "Format": "Integer",
+                    "Step": {
+                        "Type": "Random",
+                        "Max": 2,
+                        "Min": 1
+                    }
+                },
+                "entry_sv": {
+                    "Type": "Numeric",
+                    "Format": "Float",
+                    "Step": {
+                        "Type": "Random",
+                        "Max": 100,
+                        "Min": 1,
+                        "Decimal": 3
+                    }
+                },
+                "entry_cv": {
+                    "Type": "Numeric",
+                    "Format": "Integer",
+                    "Step": {
+                        "Type": "Random",
+                        "Max": 10,
+                        "Min": 1
+                    }
+                }
+            }  
+        }
+    }
+}

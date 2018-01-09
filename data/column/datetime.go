@@ -46,12 +46,13 @@ func (s *datetimeRandomStep) Next(now time.Time) time.Time {
 }
 
 type datetimeFactory struct {
-	format   string
-	now      time.Time
-	end      time.Time
-	step     datetimeStep
-	fileStep *datetimeIncreaseStep
-	fileNow  time.Time
+	format       string
+	now          time.Time
+	end          time.Time
+	step         datetimeStep
+	fileStep     *datetimeIncreaseStep
+	fileNow      time.Time
+	columnMethod int
 }
 
 func fileStep(duration string) (time.Duration, error) {
@@ -62,7 +63,7 @@ func fileStep(duration string) (time.Duration, error) {
 	return time.ParseDuration(duration)
 }
 
-func newDatetimeIncrease(format string, duration string, start time.Time, end time.Time, fileDuration string) (*datetimeFactory, error) {
+func newDatetimeIncrease(format string, duration string, start time.Time, end time.Time, fileDuration string, columnMehtod int) (*datetimeFactory, error) {
 	fDuration, err := fileStep(fileDuration)
 	if err != nil {
 		return nil, err
@@ -74,16 +75,17 @@ func newDatetimeIncrease(format string, duration string, start time.Time, end ti
 	}
 
 	return &datetimeFactory{
-		format:   format,
-		now:      start.Add(-durationNano),
-		end:      end,
-		step:     &datetimeIncreaseStep{duration: durationNano},
-		fileStep: &datetimeIncreaseStep{duration: fDuration},
-		fileNow:  start.Add(-fDuration),
+		format:       format,
+		now:          start.Add(-durationNano),
+		end:          end,
+		step:         &datetimeIncreaseStep{duration: durationNano},
+		fileStep:     &datetimeIncreaseStep{duration: fDuration},
+		fileNow:      start.Add(-fDuration),
+		columnMethod: columnMehtod,
 	}, nil
 }
 
-func newDatetimeRandom(format string, unit string, max int, min int, start time.Time, end time.Time, fileDuration string) (*datetimeFactory, error) {
+func newDatetimeRandom(format string, unit string, max int, min int, start time.Time, end time.Time, fileDuration string, columnMehtod int) (*datetimeFactory, error) {
 	fDuration, err := fileStep(fileDuration)
 	if err != nil {
 		return nil, err
@@ -110,8 +112,9 @@ func newDatetimeRandom(format string, unit string, max int, min int, start time.
 			durationN: durationN,
 			durationA: durationA,
 		},
-		fileStep: &datetimeIncreaseStep{duration: fDuration},
-		fileNow:  start.Add(-fDuration),
+		fileStep:     &datetimeIncreaseStep{duration: fDuration},
+		fileNow:      start.Add(-fDuration),
+		columnMethod: columnMehtod,
 	}, nil
 }
 
@@ -123,22 +126,30 @@ func newDatetimeFactory(columnMethod int, c map[string]interface{}) (*datetimeFa
 		dformat = time.RFC3339
 	}
 
-	var dFileDuration string
-	if columnMethod == columnChangePerRowAndFile {
-		dfileStep, ok := c["FileStep"].(map[string]interface{})
-		if !ok {
-			return nil, fmt.Errorf("column does not have file step section")
-		}
-
-		dFileDuration, ok = dfileStep["Duration"].(string)
-		if !ok || dFileDuration == "" {
-			return nil, fmt.Errorf("column does not have file duration")
-		}
-	}
-
 	dstep, ok := c["Step"].(map[string]interface{})
 	if !ok {
 		return nil, fmt.Errorf("column does not have datetime step section")
+	}
+
+	var dFileDuration string
+	if columnMethod == columnChangePerRowAndFile || columnMethod == columnChangePerFile {
+		var dfileStep map[string]interface{}
+		if columnMethod == columnChangePerRowAndFile {
+			dfileStep, ok = c["FileStep"].(map[string]interface{})
+			if !ok {
+				return nil, fmt.Errorf("column does not have file step section")
+			}
+
+			dFileDuration, ok = dfileStep["Duration"].(string)
+			if !ok || dFileDuration == "" {
+				return nil, fmt.Errorf("column does not have file duration")
+			}
+		} else {
+			dFileDuration, ok = dstep["Duration"].(string)
+			if !ok || dFileDuration == "" {
+				return nil, fmt.Errorf("column does not have file duration")
+			}
+		}
 	}
 
 	dstartString, ok := dstep["Start"].(string)
@@ -174,7 +185,7 @@ func newDatetimeFactory(columnMethod int, c map[string]interface{}) (*datetimeFa
 			return nil, fmt.Errorf("column does not have datetime fix duration")
 		}
 
-		result, err = newDatetimeIncrease(dformat, dstepDuration, dstart, dend, dFileDuration)
+		result, err = newDatetimeIncrease(dformat, dstepDuration, dstart, dend, dFileDuration, columnMethod)
 		if err != nil {
 			return nil, err
 		}
@@ -194,7 +205,7 @@ func newDatetimeFactory(columnMethod int, c map[string]interface{}) (*datetimeFa
 			return nil, fmt.Errorf("column does not have datetime random min")
 		}
 
-		result, err = newDatetimeRandom(dformat, dstepUnit, int(dstepMax), int(dstepMin), dstart, dend, dFileDuration)
+		result, err = newDatetimeRandom(dformat, dstepUnit, int(dstepMax), int(dstepMin), dstart, dend, dFileDuration, columnMethod)
 		if err != nil {
 			return nil, err
 		}
@@ -221,19 +232,30 @@ func (d *datetimeFactory) Create() Column {
 		end = d.fileStep.Next(d.fileNow)
 	}
 
-	result := &datetime{
-		datetimeFactory: datetimeFactory{
-			format:  d.format,
-			now:     d.now,
-			end:     end,
-			step:    d.step.Clone(),
-			fileNow: d.fileNow,
-		},
-		buffer: b,
-	}
+	var result Column
+	if d.columnMethod == columnChangePerFile {
+		if d.fileStep != nil && d.fileStep.duration > 0 {
+			d.now = d.fileStep.Next(d.now)
+		}
 
-	if d.fileStep != nil && d.fileStep.duration > 0 {
-		d.now = d.fileStep.Next(d.now)
+		result = &fixString{
+			value: d.now.Format(d.format),
+		}
+	} else {
+		result = &datetime{
+			datetimeFactory: datetimeFactory{
+				format:  d.format,
+				now:     d.now,
+				end:     end,
+				step:    d.step.Clone(),
+				fileNow: d.fileNow,
+			},
+			buffer: b,
+		}
+
+		if d.fileStep != nil && d.fileStep.duration > 0 {
+			d.now = d.fileStep.Next(d.now)
+		}
 	}
 
 	return result
