@@ -39,7 +39,7 @@ func newNumericFactory(columnMethod int, c map[string]interface{}) (result Facto
 		case "Integer":
 			result = newRandomInteger(columnMethod, int(niMax), int(niMin))
 		case "Float":
-			niDecimal, ok := nstep["Decimal"].(int)
+			niDecimal, ok := nstep["Decimal"].(float64)
 			if !ok {
 				return nil, fmt.Errorf("column does not have numeric random float decimal")
 			}
@@ -83,9 +83,10 @@ func (i *randomInteger) Data() (string, error) {
 }
 
 type randomFloatFactory struct {
-	n   int64
-	a   int64
-	mod int64
+	n       int64
+	a       int64
+	mod     int64
+	decimal int
 }
 
 func (f *randomFloatFactory) Create() Column {
@@ -101,7 +102,7 @@ type randomFloat struct {
 }
 
 func (f *randomFloat) Data() (string, error) {
-	return strconv.FormatFloat(float64(f.rand.Int63n(f.n)+f.a)/float64(f.mod), 'f', 6, 64), nil
+	return strconv.FormatFloat(float64(f.rand.Int63n(f.n)+f.a)/float64(f.mod), 'f', f.decimal, 64), nil
 }
 
 func newRandomFloat(columnMethod int, max float64, min float64, decimal int) *randomFloatFactory {
@@ -110,8 +111,9 @@ func newRandomFloat(columnMethod int, max float64, min float64, decimal int) *ra
 	minI := int64(min * float64(mod))
 
 	return &randomFloatFactory{
-		n:   maxI - minI,
-		a:   minI,
-		mod: mod,
+		n:       maxI - minI,
+		a:       minI,
+		mod:     mod,
+		decimal: decimal,
 	}
 }

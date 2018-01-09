@@ -44,7 +44,7 @@ func TestRandomFloat(t *testing.T) {
 	step["Type"] = "Random"
 	step["Max"] = float64(max)
 	step["Min"] = float64(min)
-	step["Decimal"] = 3
+	step["Decimal"] = float64(3)
 	tmpl["Step"] = step
 
 	f, err := newNumericFactory(columnChangePerRow, tmpl)
