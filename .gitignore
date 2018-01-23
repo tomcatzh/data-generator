@@ -3,3 +3,4 @@ data-generator
 .vscode
 debug
 *.bz2
+data-generator.linux.xz
